@@ -35,15 +35,29 @@ func TestGenerateCmd_GIVENCheck_WHENOutputsAreMissingStaleOrChanged_THENListsThe
 	if err == nil {
 		t.Fatalf("generate -check with nothing generated succeeded:\n%s", out)
 	}
-	for _, want := range []string{"missing: ui/card_ktml.go", "missing: ui/card_ktml_dev.go", "missing: web/page_ktml.go", "missing: web/person_ktmlschema.go"} {
+	for _, want := range []string{"missing: ui/card_ktml.go", "missing: web/page_ktml.go", "missing: web/person_ktmlschema.go"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output lacks %q:\n%s", want, out)
 		}
+	}
+	if strings.Contains(out, "_ktml_dev.go") {
+		t.Errorf("a missing development output is reported; it is optional:\n%s", out)
 	}
 	if after := snapshotTree(t); !maps.Equal(before, after) {
 		t.Errorf("generate -check wrote files: %v", keysOf(after))
 	}
 
+	if _, err := runGenerate(t, "./..."); err != nil {
+		t.Fatal(err)
+	}
+	// A checkout that commits production output and ignores development
+	// output has no *_ktml_dev.go files: that is up to date.
+	if err := os.Remove("ui/card_ktml_dev.go"); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runGenerate(t, "-check", "./..."); err != nil || out != "" {
+		t.Fatalf("generate -check without development outputs = %q, %v; want no output and no error", out, err)
+	}
 	if _, err := runGenerate(t, "./..."); err != nil {
 		t.Fatal(err)
 	}

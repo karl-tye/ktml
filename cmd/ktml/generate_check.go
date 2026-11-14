@@ -17,12 +17,19 @@ import (
 // nativeOutputSuffixes are the file names the native Go generator writes.
 var nativeOutputSuffixes = []string{"_ktml.go", "_ktml_dev.go", "_ktmlschema.go"}
 
+// developmentOutputSuffix names the development build's output. It is
+// optional for -check: a project may commit production output and ignore
+// development output, so a missing one is up to date. One that exists is
+// still compared.
+const developmentOutputSuffix = "_ktml_dev.go"
+
 // generatedHeader is Go's marker for a generated file.
 var generatedHeader = regexp.MustCompile(`(?m)^// Code generated .* DO NOT EDIT\.$`)
 
 // checkGenerated is ktml generate -check: it generates files in memory,
 // ignoring the build cache, and compares every output with the file on
-// disk. It writes nothing. It prints one line per output that is missing,
+// disk. It writes nothing. It prints one line per output that is missing
+// (development outputs are optional),
 // changed, or stale (a generated file under a directory argument, or a
 // recorded output of a selected source, that generation no longer
 // produces), and fails when there is any.
@@ -63,6 +70,7 @@ func checkGenerated(ctx context.Context, args, files []string, stdout io.Writer)
 	for path, content := range expected {
 		current, err := os.ReadFile(filepath.FromSlash(path))
 		switch {
+		case os.IsNotExist(err) && strings.HasSuffix(path, developmentOutputSuffix):
 		case os.IsNotExist(err):
 			problems = append(problems, "missing: "+path)
 		case err != nil:
