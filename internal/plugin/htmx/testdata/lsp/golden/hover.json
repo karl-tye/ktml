@@ -1,0 +1,20 @@
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": {
+    "contents": {
+      "kind": "markdown",
+      "value": "`POST /vendors/{id}/approve` → `vendors.Approve` (router.go:18)"
+    },
+    "range": {
+      "end": {
+        "character": 47,
+        "line": 4
+      },
+      "start": {
+        "character": 19,
+        "line": 4
+      }
+    }
+  }
+}

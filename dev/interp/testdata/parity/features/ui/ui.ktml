@@ -1,0 +1,108 @@
+import { Link } from "../model/model.ktmlschema"
+
+Anchor [link: Link, data: JSONValue, handler: TrustedScript, busy: boolean = false] {
+	a href="{link.href}" data-trusted="{link.trusted}" data-json="{data}" onclick="{handler}" :disabled="{busy}" x-data="{data}" hx-vals="js:{data}" "{link.label}"
+	if link.external {
+		span class="ext" "external"
+	}
+}
+
+Card [title: string, children: content, foot?: content, level: integer = 2, ratio: number = 1.5] {
+	section class="card" data-level="{level}" data-ratio="{ratio}" {
+		h2 title="{title}" "{title} ({level})"
+		children
+		if foot? {
+			footer {
+				foot
+			}
+		}
+	}
+}
+
+Escapes [text: string, count: integer, amount: number, href: URL, raw: TrustedURL, data: JSONValue, script: TrustedScript, flag: boolean] {
+	p title="lit &amp; <b>\"q\" 'a'" "lit <i>&amp; \"q\" 'a'"
+	p "{text}|{count}|{amount}"
+	p title="{text}" data-count="{count}" data-amount="{amount}" data-mixed="pre {text} mid {count} {amount} post"
+	a href="{href}" "u"
+	a href="{raw}" "t"
+	a href="/jobs/{text}/{count}?a={amount}#{text}" "m"
+	a HREF="mailto:{text}" "mail"
+	img src="https://cdn.example.com/{text}?v={count}"
+	div data-json="{data}" x-data="{data}" @click="{script}" x-show="{flag}" onclick="run({data}, {flag}); {script}" hidden="{flag}"
+	<!-- static <b>&amp; comment -->
+}
+
+Doc [children?: content] {
+	doctype html
+	html {
+		body {
+			children
+		}
+	}
+}
+
+Wrapper [] {
+	Doc {
+		p "wrapped"
+	}
+}
+
+Inline [label: string] {
+	script ```
+	if (a && b < c) { console.log(`${a}<b>&amp;'"`) }
+	```
+	style {
+		```a > b { content: "&" }```
+		```
+c{}```
+	}
+	p "{label}"
+}
+
+Tab [current: boolean, oob: boolean, form?: string, label: string, handler: TrustedScript, href: URL] {
+	a (
+		href="{href}"
+		if current { aria-current="page" class="on" } else { class="off" }
+		if form? { form="{form}" title="{form} x" } else if oob { hx-swap-oob="true" } else { data-none }
+		if current && oob { @click="{handler}" data-label="{label}" disabled="{oob}" }
+		aria-selected="{current}"
+		if oob { aria-busy="{current}" }
+	) "{label}"
+	option (value="6" if !current { selected }) "6"
+}
+
+Caption [text: string] {
+	small "{text}"
+}
+
+Field [label: string, attrs?: Attributes] {
+	input (type="text" class="field" if attrs? { ...attrs })
+}
+
+Form [busy: boolean, count: integer, ratio: number, label: string, handler: TrustedScript, data: JSONValue, href: URL, mine: Attributes, note?: string] {
+	Field label="a"
+	Field (
+		label="b"
+		attrs=(required title="{label} #{count} {ratio}" @click="{handler}" :disabled="{busy}" x-data="{data}" hx-get="{href}" formaction="/x/{label}/{count}" poster="javascript:void(0)" @keyup="go('<x>')" style="display: none" CLASS="dropped" aria-busy="{busy}" if busy { disabled } else if note? { data-note="{note}" } ...mine)
+	)
+	Field label="c" attrs="{mine}"
+	Caption text="{count} items, {ratio} of {label}"
+	div (id="d" ...mine)
+}
+
+Bar [width: CSSValue, extra: CSSValue, hidden: boolean] {
+	div style="{width}"
+	div (style="display: block; {extra}" if hidden { title="h" })
+	div (if hidden { style="display: none" } else { style="{width}" })
+}
+
+Chart [id: JSONValue, data: JSONValue, boot: TrustedScript, debug: boolean] {
+	script type="application/json" id="chart-data" "{data}"
+	script "createChart({id}, {data}); if (a < b && c) go();"
+	script "window.debug = {debug}; {boot}"
+	button (@click="toggle({data}, {debug})" x-init="{boot}") "x"
+}
+
+Contractor [target: string] {
+	form (hx-post="/x" hx-target-4*="#errors" hx-target-*="{target}" hx-on--after-request="reset()") {}
+}

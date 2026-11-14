@@ -1,0 +1,1704 @@
+{
+  "schemaVersion": 1,
+  "scope": "All cases assert shared validity and recovery. Cases with declarations assert normalized component input modes, types, scalar defaults, bodyless/default signature markers, and byte ranges. Cases with states assert state names, variants, payload markers, payload fields, and byte ranges; cases with clauses assert render clause names, selectors, patterns with qualifiers, bindings with aliases, and byte ranges; cases with repetitions assert every Keyed Repetition in pre-order with its item, keywords, collection and key path parts, and byte ranges. Cases with records assert normalized record fields, optional markers, canonical types, and byte ranges; cases with imports assert import specifiers, aliases, and path ranges. Cases with interpolations assert normalized path shape and byte ranges; cases with segments assert normalized quoted literal/path segments. Cases with elements assert every body element in pre-order with its name range, depth, continuation-group marker, and attribute names and ranges; cases with conditions assert every condition node in pre-order with its if/else keyword ranges, else-if marker, and normalized condition tree; cases with slots assert every slot fill with its keyword, name, and whole ranges. Broader semantic equivalence is not asserted. Cases with markup assert every doctype, HTML comment, and raw-text literal in pre-order with its kind, range, and doctype name or text; cases with attributeConditions assert every conditional attribute group with its keyword ranges, condition tree, and branch attributes; cases with forwarding assert every spread path and attribute bag literal with its ranges and attributes. Cases with stories assert every story and fixture declaration with its component, name, keyword, argument, and body ranges and every value's kind, payload range, and nested fields or items.",
+  "cases": [
+    {
+      "name": "imports",
+      "source": "valid/imports.ktml",
+      "valid": true,
+      "imports": [
+        {
+          "path": "\"./ui\"",
+          "pathStart": 29,
+          "pathEnd": 35,
+          "specifiers": [
+            { "name": "Button", "start": 9, "end": 15 },
+            { "name": "Icon", "start": 17, "end": 21 }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "empty component",
+      "source": "valid/empty-component.ktml",
+      "valid": true
+    },
+    {
+      "name": "typed parameters and defaults",
+      "source": "valid/parameters.ktml",
+      "valid": true
+    },
+    {
+      "name": "canonical input modes",
+      "source": "valid/input-modes.ktml",
+      "valid": true,
+      "declarations": [
+        {
+          "name": "Card",
+          "start": 0,
+          "end": 4,
+          "bodyless": false,
+          "inputs": [
+            { "name": "title", "start": 6, "end": 19, "nameStart": 6, "nameEnd": 11, "type": "string", "typeStart": 13, "typeEnd": 19, "mode": "required" },
+            { "name": "subtitle", "start": 21, "end": 38, "nameStart": 21, "nameEnd": 29, "type": "string", "typeStart": 32, "typeEnd": 38, "mode": "optional", "optionalStart": 29, "optionalEnd": 30 },
+            { "name": "enabled", "start": 40, "end": 64, "nameStart": 40, "nameEnd": 47, "type": "boolean", "typeStart": 49, "typeEnd": 56, "mode": "defaulted", "operatorStart": 57, "operatorEnd": 58, "default": { "kind": "boolean", "raw": "false", "start": 59, "end": 64, "boolean": false } },
+            { "name": "count", "start": 66, "end": 83, "nameStart": 66, "nameEnd": 71, "type": "number", "typeStart": 73, "typeEnd": 79, "mode": "defaulted", "operatorStart": 80, "operatorEnd": 81, "default": { "kind": "number", "raw": "0", "start": 82, "end": 83, "number": 0 } },
+            { "name": "label", "start": 85, "end": 103, "nameStart": 85, "nameEnd": 90, "type": "string", "typeStart": 92, "typeEnd": 98, "mode": "defaulted", "operatorStart": 99, "operatorEnd": 100, "default": { "kind": "string", "raw": "\"\"", "start": 101, "end": 103, "string": "" } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "escaped string default",
+      "source": "valid/escaped-default.ktml",
+      "valid": true,
+      "declarations": [
+        {
+          "name": "Escaped",
+          "start": 0,
+          "end": 7,
+          "bodyless": false,
+          "inputs": [
+            { "name": "label", "start": 9, "end": 33, "nameStart": 9, "nameEnd": 14, "type": "string", "typeStart": 16, "typeEnd": 22, "mode": "defaulted", "operatorStart": 23, "operatorEnd": 24, "default": { "kind": "string", "raw": "\"\\u0041\"", "start": 25, "end": 33, "string": "A" } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "nested elements, id, and text",
+      "source": "valid/nested.ktml",
+      "valid": true
+    },
+    {
+      "name": "comments",
+      "source": "valid/comments.ktml",
+      "valid": true
+    },
+    {
+      "name": "quoted interpolation paths",
+      "source": "valid/quoted-interpolation.ktml",
+      "valid": true,
+      "interpolations": [
+        {
+          "start": 49,
+          "end": 60,
+          "path": "user.Name",
+          "parts": [
+            { "name": "user", "start": 50, "end": 54 },
+            { "name": "Name", "start": 55, "end": 59 }
+          ]
+        },
+        {
+          "start": 72,
+          "end": 78,
+          "path": "name",
+          "parts": [
+            { "name": "name", "start": 73, "end": 77 }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "literal brace values",
+      "source": "valid/literal-braces.ktml",
+      "valid": true
+    },
+    {
+      "name": "literal brace object and interpolation",
+      "source": "valid/mixed-literal-brace-interpolation.ktml",
+      "valid": true,
+      "interpolations": [
+        {
+          "start": 50,
+          "end": 56,
+          "path": "name",
+          "parts": [
+            { "name": "name", "start": 51, "end": 55 }
+          ]
+        }
+      ],
+      "segments": [
+        { "kind": "literal", "start": 34, "end": 50, "literal": "{ open: false } " },
+        { "kind": "path", "start": 50, "end": 56, "path": "name" }
+      ]
+    },
+    {
+      "name": "host schema records",
+      "source": "valid/records.ktmlschema",
+      "valid": true,
+      "records": [
+        {
+          "name": "Address",
+          "start": 30,
+          "end": 37,
+          "fields": [
+            { "name": "city", "start": 41, "end": 53, "nameStart": 41, "nameEnd": 45, "type": "string", "typeStart": 47, "typeEnd": 53, "optional": false },
+            { "name": "zip", "start": 56, "end": 68, "nameStart": 56, "nameEnd": 59, "type": "string", "typeStart": 62, "typeEnd": 68, "optional": true, "optionalStart": 59, "optionalEnd": 60 }
+          ]
+        },
+        {
+          "name": "User",
+          "start": 80,
+          "end": 84,
+          "fields": [
+            { "name": "id", "start": 88, "end": 99, "nameStart": 88, "nameEnd": 90, "type": "integer", "typeStart": 92, "typeEnd": 99, "optional": false },
+            { "name": "name", "start": 102, "end": 114, "nameStart": 102, "nameEnd": 106, "type": "string", "typeStart": 108, "typeEnd": 114, "optional": false },
+            { "name": "verified", "start": 117, "end": 135, "nameStart": 117, "nameEnd": 125, "type": "boolean", "typeStart": 128, "typeEnd": 135, "optional": true, "optionalStart": 125, "optionalEnd": 126 },
+            { "name": "score", "start": 138, "end": 151, "nameStart": 138, "nameEnd": 143, "type": "number", "typeStart": 145, "typeEnd": 151, "optional": false },
+            { "name": "address", "start": 154, "end": 170, "nameStart": 154, "nameEnd": 161, "type": "Address", "typeStart": 163, "typeEnd": 170, "optional": false },
+            { "name": "tags", "start": 173, "end": 187, "nameStart": 173, "nameEnd": 177, "type": "[string]", "typeStart": 179, "typeEnd": 187, "optional": false },
+            { "name": "history", "start": 190, "end": 210, "nameStart": 190, "nameEnd": 197, "type": "[[Address]]", "typeStart": 199, "typeEnd": 210, "optional": false }
+          ]
+        },
+        {
+          "name": "Empty",
+          "start": 222,
+          "end": 227,
+          "fields": []
+        },
+        {
+          "name": "Inline",
+          "start": 239,
+          "end": 245,
+          "fields": [
+            { "name": "label", "start": 247, "end": 260, "nameStart": 247, "nameEnd": 252, "type": "string", "typeStart": 254, "typeEnd": 260, "optional": false }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "schema imports with aliases",
+      "source": "valid/schema-imports.ktmlschema",
+      "valid": true,
+      "imports": [
+        {
+          "path": "\"./records.ktmlschema\"",
+          "pathStart": 41,
+          "pathEnd": 63,
+          "specifiers": [
+            { "name": "Address", "start": 9, "end": 16 },
+            { "name": "User", "start": 18, "end": 22, "alias": "Member", "aliasStart": 26, "aliasEnd": 32 }
+          ]
+        },
+        {
+          "path": "\"./records.ktmlschema\"",
+          "pathStart": 86,
+          "pathEnd": 108,
+          "specifiers": [
+            { "name": "Empty", "start": 73, "end": 78 }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "record and collection inputs with dotted paths",
+      "source": "valid/record-inputs.ktml",
+      "valid": true,
+      "imports": [
+        {
+          "path": "\"./records.ktmlschema\"",
+          "pathStart": 40,
+          "pathEnd": 62,
+          "specifiers": [
+            { "name": "User", "start": 9, "end": 13, "alias": "Member", "aliasStart": 17, "aliasEnd": 23 },
+            { "name": "Address", "start": 25, "end": 32 }
+          ]
+        }
+      ],
+      "declarations": [
+        {
+          "name": "Profile",
+          "start": 64,
+          "end": 71,
+          "bodyless": false,
+          "inputs": [
+            { "name": "user", "start": 73, "end": 85, "nameStart": 73, "nameEnd": 77, "type": "Member", "typeStart": 79, "typeEnd": 85, "mode": "required" },
+            { "name": "addresses", "start": 87, "end": 107, "nameStart": 87, "nameEnd": 96, "type": "[Address]", "typeStart": 98, "typeEnd": 107, "mode": "required" },
+            { "name": "manager", "start": 109, "end": 125, "nameStart": 109, "nameEnd": 116, "type": "Member", "typeStart": 119, "typeEnd": 125, "mode": "optional", "optionalStart": 116, "optionalEnd": 117 },
+            { "name": "rank", "start": 127, "end": 144, "nameStart": 127, "nameEnd": 131, "type": "integer", "typeStart": 133, "typeEnd": 140, "mode": "defaulted", "operatorStart": 141, "operatorEnd": 142, "default": {"kind": "number", "raw": "1", "start": 143, "end": 144, "number": 1} }
+          ]
+        }
+      ],
+      "interpolations": [
+        {
+          "start": 154,
+          "end": 173,
+          "path": "user.address.city",
+          "parts": [
+            { "name": "user", "start": 155, "end": 159 },
+            { "name": "address", "start": 160, "end": 167 },
+            { "name": "city", "start": 168, "end": 172 }
+          ]
+        },
+        {
+          "start": 193,
+          "end": 202,
+          "path": "user.id",
+          "parts": [
+            { "name": "user", "start": 194, "end": 198 },
+            { "name": "id", "start": 199, "end": 201 }
+          ]
+        },
+        {
+          "start": 207,
+          "end": 218,
+          "path": "user.name",
+          "parts": [
+            { "name": "user", "start": 208, "end": 212 },
+            { "name": "name", "start": 213, "end": 217 }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "presentation states",
+      "source": "valid/states.ktmlschema",
+      "valid": true,
+      "imports": [
+        {
+          "path": "\"./records.ktmlschema\"",
+          "pathStart": 24,
+          "pathEnd": 46,
+          "specifiers": [
+            { "name": "Address", "start": 9, "end": 16 }
+          ]
+        }
+      ],
+      "states": [
+        {
+          "name": "SearchState",
+          "start": 71,
+          "end": 180,
+          "keywordStart": 71,
+          "keywordEnd": 76,
+          "nameStart": 77,
+          "nameEnd": 88,
+          "variants": [
+            { "name": "Loading", "start": 92, "end": 99, "nameStart": 92, "nameEnd": 99, "payload": false, "fields": [] },
+            {
+              "name": "Loaded", "start": 102, "end": 152, "nameStart": 102, "nameEnd": 108, "payload": true, "payloadStart": 109, "payloadEnd": 152,
+              "fields": [
+                { "name": "items", "start": 113, "end": 129, "nameStart": 113, "nameEnd": 118, "type": "[Address]", "typeStart": 120, "typeEnd": 129, "optional": false },
+                { "name": "total", "start": 133, "end": 148, "nameStart": 133, "nameEnd": 138, "type": "integer", "typeStart": 141, "typeEnd": 148, "optional": true, "optionalStart": 138, "optionalEnd": 139 }
+              ]
+            },
+            {
+              "name": "Failed", "start": 155, "end": 177, "nameStart": 155, "nameEnd": 161, "payload": true, "payloadStart": 162, "payloadEnd": 177,
+              "fields": [
+                { "name": "state", "start": 163, "end": 176, "nameStart": 163, "nameEnd": 168, "type": "string", "typeStart": 170, "typeEnd": 176, "optional": false }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Toggle",
+          "start": 182,
+          "end": 206,
+          "keywordStart": 182,
+          "keywordEnd": 187,
+          "nameStart": 188,
+          "nameEnd": 194,
+          "variants": [
+            { "name": "On", "start": 197, "end": 199, "nameStart": 197, "nameEnd": 199, "payload": false, "fields": [] },
+            { "name": "Off", "start": 201, "end": 204, "nameStart": 201, "nameEnd": 204, "payload": false, "fields": [] }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "render clauses with bodyless and default signatures",
+      "source": "valid/render-clauses.ktml",
+      "valid": true,
+      "imports": [
+        {
+          "path": "\"./states.ktmlschema\"",
+          "pathStart": 38,
+          "pathEnd": 59,
+          "specifiers": [
+            { "name": "SearchState", "start": 9, "end": 20, "alias": "Search", "aliasStart": 24, "aliasEnd": 30 }
+          ]
+        }
+      ],
+      "declarations": [
+        {
+          "name": "SearchResults",
+          "start": 61,
+          "end": 74,
+          "bodyless": true,
+          "inputs": [
+            { "name": "state", "start": 76, "end": 89, "nameStart": 76, "nameEnd": 81, "type": "Search", "typeStart": 83, "typeEnd": 89, "mode": "required" },
+            { "name": "query", "start": 91, "end": 104, "nameStart": 91, "nameEnd": 96, "type": "string", "typeStart": 98, "typeEnd": 104, "mode": "required" }
+          ]
+        },
+        {
+          "name": "Subtitle",
+          "start": 327,
+          "end": 335,
+          "bodyless": false,
+          "defaultStart": 356,
+          "defaultEnd": 363,
+          "inputs": [
+            { "name": "subtitle", "start": 337, "end": 354, "nameStart": 337, "nameEnd": 345, "type": "string", "typeStart": 348, "typeEnd": 354, "mode": "optional", "optionalStart": 345, "optionalEnd": 346 }
+          ]
+        },
+        {
+          "name": "Flag",
+          "start": 472,
+          "end": 476,
+          "bodyless": true,
+          "inputs": [
+            { "name": "on", "start": 478, "end": 497, "nameStart": 478, "nameEnd": 480, "type": "boolean", "typeStart": 482, "typeEnd": 489, "mode": "defaulted", "operatorStart": 490, "operatorEnd": 491, "default": { "kind": "boolean", "raw": "false", "start": 492, "end": 497, "boolean": false } }
+          ]
+        }
+      ],
+      "clauses": [
+        {
+          "name": "SearchResults", "start": 107, "end": 169, "nameStart": 107, "nameEnd": 120,
+          "selector": "state", "selectorStart": 122, "selectorEnd": 127,
+          "pattern": { "name": "Loading", "start": 130, "end": 137, "nameStart": 130, "nameEnd": 137 },
+          "bindings": []
+        },
+        {
+          "name": "SearchResults", "start": 171, "end": 252, "nameStart": 171, "nameEnd": 184,
+          "selector": "state", "selectorStart": 186, "selectorEnd": 191,
+          "pattern": { "name": "Loaded", "start": 194, "end": 207, "nameStart": 201, "nameEnd": 207, "qualifier": "Search", "qualifierStart": 194, "qualifierEnd": 200 },
+          "bindings": [
+            { "field": "items", "start": 209, "end": 214, "fieldStart": 209, "fieldEnd": 214 },
+            { "field": "total", "start": 216, "end": 230, "fieldStart": 216, "fieldEnd": 221, "alias": "count", "aliasStart": 225, "aliasEnd": 230 }
+          ]
+        },
+        {
+          "name": "SearchResults", "start": 254, "end": 325, "nameStart": 254, "nameEnd": 267,
+          "selector": "state", "selectorStart": 269, "selectorEnd": 274,
+          "pattern": { "name": "Failed", "start": 277, "end": 283, "nameStart": 277, "nameEnd": 283 },
+          "bindings": [
+            { "field": "state", "start": 285, "end": 301, "fieldStart": 285, "fieldEnd": 290, "alias": "message", "aliasStart": 294, "aliasEnd": 301 }
+          ]
+        },
+        {
+          "name": "Subtitle", "start": 375, "end": 439, "nameStart": 375, "nameEnd": 383,
+          "selector": "subtitle", "selectorStart": 385, "selectorEnd": 393,
+          "pattern": { "name": "Some", "start": 396, "end": 400, "nameStart": 396, "nameEnd": 400 },
+          "bindings": [
+            { "field": "value", "start": 402, "end": 415, "fieldStart": 402, "fieldEnd": 407, "alias": "text", "aliasStart": 411, "aliasEnd": 415 }
+          ]
+        },
+        {
+          "name": "Subtitle", "start": 441, "end": 470, "nameStart": 441, "nameEnd": 449,
+          "selector": "subtitle", "selectorStart": 451, "selectorEnd": 459,
+          "pattern": { "name": "None", "start": 462, "end": 466, "nameStart": 462, "nameEnd": 466 },
+          "bindings": []
+        },
+        {
+          "name": "Flag", "start": 500, "end": 525, "nameStart": 500, "nameEnd": 504,
+          "selector": "on", "selectorStart": 506, "selectorEnd": 508,
+          "pattern": { "name": "true", "start": 511, "end": 515, "nameStart": 511, "nameEnd": 515 },
+          "bindings": []
+        },
+        {
+          "name": "Flag", "start": 527, "end": 554, "nameStart": 527, "nameEnd": 531,
+          "selector": "on", "selectorStart": 533, "selectorEnd": 535,
+          "pattern": { "name": "false", "start": 538, "end": 543, "nameStart": 538, "nameEnd": 543 },
+          "bindings": []
+        }
+      ]
+    },
+    {
+      "name": "keyed repetitions in element, default, and clause bodies",
+      "source": "valid/keyed-repetition.ktml",
+      "valid": true,
+      "repetitions": [
+        {
+          "item": "group", "start": 82, "end": 217, "keywordStart": 82, "keywordEnd": 85, "itemStart": 86, "itemEnd": 91, "inStart": 92, "inEnd": 94,
+          "collection": { "name": "groups", "start": 95, "end": 101, "parts": [
+            { "name": "groups", "start": 95, "end": 101 }
+          ] },
+          "keyKeywordStart": 102, "keyKeywordEnd": 105,
+          "key": { "name": "group.id", "start": 106, "end": 114, "parts": [
+            { "name": "group", "start": 106, "end": 111 },
+            { "name": "id", "start": 112, "end": 114 }
+          ] }
+        },
+        {
+          "item": "card", "start": 146, "end": 213, "keywordStart": 146, "keywordEnd": 149, "itemStart": 150, "itemEnd": 154, "inStart": 155, "inEnd": 157,
+          "collection": { "name": "group.cards", "start": 158, "end": 169, "parts": [
+            { "name": "group", "start": 158, "end": 163 },
+            { "name": "cards", "start": 164, "end": 169 }
+          ] },
+          "keyKeywordStart": 170, "keyKeywordEnd": 173,
+          "key": { "name": "card.id", "start": 174, "end": 181, "parts": [
+            { "name": "card", "start": 174, "end": 178 },
+            { "name": "id", "start": 179, "end": 181 }
+          ] }
+        },
+        {
+          "item": "tag", "start": 229, "end": 255, "keywordStart": 229, "keywordEnd": 232, "itemStart": 233, "itemEnd": 236, "inStart": 237, "inEnd": 239,
+          "collection": { "name": "tags", "start": 240, "end": 244, "parts": [
+            { "name": "tags", "start": 240, "end": 244 }
+          ] },
+          "keyKeywordStart": 245, "keyKeywordEnd": 248,
+          "key": { "name": "tag", "start": 249, "end": 252, "parts": [
+            { "name": "tag", "start": 249, "end": 252 }
+          ] }
+        },
+        {
+          "item": "item", "start": 313, "end": 371, "keywordStart": 313, "keywordEnd": 316, "itemStart": 317, "itemEnd": 321, "inStart": 322, "inEnd": 324,
+          "collection": { "name": "items", "start": 325, "end": 330, "parts": [
+            { "name": "items", "start": 325, "end": 330 }
+          ] },
+          "keyKeywordStart": 331, "keyKeywordEnd": 334,
+          "key": { "name": "item.id", "start": 335, "end": 342, "parts": [
+            { "name": "item", "start": 335, "end": 339 },
+            { "name": "id", "start": 340, "end": 342 }
+          ] }
+        }
+      ]
+    },
+    {
+      "name": "missing component body brace",
+      "source": "invalid/missing-body-brace.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 18, "end": 19 }
+        ],
+        "recoveredTopLevelNodes": 0
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "missing", "start": 17, "end": 17 }
+        ]
+      }
+    },
+    {
+      "name": "missing parameter type",
+      "source": "invalid/missing-parameter-type.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 11, "end": 12 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "missing", "start": 11, "end": 11 }
+        ]
+      }
+    },
+    {
+      "name": "unexpected body token",
+      "source": "invalid/unexpected-body-token.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 11, "end": 12 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 11, "end": 12 }
+        ]
+      }
+    },
+    {
+      "name": "call in quoted interpolation",
+      "source": "invalid/interpolation-call.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 24, "end": 33 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 30, "end": 32 }
+        ]
+      }
+    },
+    {
+      "name": "unmatched interpolation close",
+      "source": "invalid/unmatched-interpolation-close.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 29, "end": 30 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 29, "end": 30 }
+        ]
+      }
+    },
+    {
+      "name": "optional input cannot also have a default",
+      "source": "invalid/optional-default.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 20, "end": 21 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 20, "end": 32 }
+        ]
+      }
+    },
+    {
+      "name": "default must be a scalar literal",
+      "source": "invalid/non-scalar-default.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 22, "end": 30 },
+          { "kind": "error", "start": 30, "end": 31 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 13, "end": 21 }
+        ]
+      }
+    },
+    {
+      "name": "default cannot interpolate another input",
+      "source": "invalid/interpolated-default.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 22, "end": 31 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 20, "end": 31 }
+        ]
+      }
+    },
+    {
+      "name": "default string escape must be valid",
+      "source": "invalid/invalid-default-escape.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 22, "end": 26 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 13, "end": 24 },
+          { "kind": "error", "start": 25, "end": 26 }
+        ]
+      }
+    },
+    {
+      "name": "record field missing colon",
+      "source": "invalid/record-field-missing-colon.ktmlschema",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 18, "end": 24 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 15, "end": 25 }
+        ]
+      }
+    },
+    {
+      "name": "record field cannot have a default",
+      "source": "invalid/record-field-default.ktmlschema",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 26, "end": 27 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 26, "end": 31 }
+        ]
+      }
+    },
+    {
+      "name": "record missing closing bracket before next record",
+      "source": "invalid/record-missing-close.ktmlschema",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 28, "end": 34 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 28, "end": 41 }
+        ]
+      }
+    },
+    {
+      "name": "unclosed collection type in input",
+      "source": "invalid/unclosed-collection-type.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 18, "end": 19 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "missing", "start": 18, "end": 18 }
+        ]
+      }
+    },
+    {
+      "name": "import alias missing its name",
+      "source": "invalid/alias-missing-name.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 14, "end": 15 }
+        ],
+        "recoveredTopLevelNodes": 0
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 11, "end": 13 }
+        ]
+      }
+    },
+    {
+      "name": "render clause header rejects a trailing comma",
+      "source": "invalid/clause-trailing-comma.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 39, "end": 40 },
+          { "kind": "error", "start": 48, "end": 49 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 38, "end": 39 }
+        ]
+      }
+    },
+    {
+      "name": "state variants need separating commas",
+      "source": "invalid/variant-missing-comma.ktmlschema",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 14, "end": 15 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 14, "end": 15 }
+        ]
+      }
+    },
+    {
+      "name": "default signature needs a body",
+      "source": "invalid/default-without-body.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 30, "end": 35 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 21, "end": 28 }
+        ]
+      }
+    },
+    {
+      "name": "qualified pattern needs a variant name",
+      "source": "invalid/unterminated-qualifier.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 16, "end": 17 },
+          { "kind": "error", "start": 25, "end": 26 }
+        ],
+        "recoveredTopLevelNodes": 0
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 15, "end": 16 }
+        ]
+      }
+    },
+    {
+      "name": "repetition needs a key",
+      "source": "invalid/repetition-missing-key.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 35, "end": 36 },
+          { "kind": "error", "start": 38, "end": 39 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 23, "end": 37 }
+        ]
+      }
+    },
+    {
+      "name": "repetition path rejects a spaced separator",
+      "source": "invalid/repetition-spaced-path.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 34, "end": 35 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 34, "end": 37 }
+        ]
+      }
+    },
+    {
+      "name": "repetition needs a braced body",
+      "source": "invalid/repetition-missing-body.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 41, "end": 42 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 23, "end": 40 }
+        ]
+      }
+    },
+    {
+      "name": "element lines, siblings, and continuation groups",
+      "source": "valid/element-lines.ktml",
+      "valid": true,
+      "elements": [
+        { "name": "div", "nameStart": 22, "nameEnd": 25, "depth": 0, "multiline": false, "attributes": [{ "name": "id", "start": 26, "end": 32 }] },
+        { "name": "div", "nameStart": 34, "nameEnd": 37, "depth": 0, "multiline": false, "attributes": [{ "name": "id", "start": 38, "end": 44 }] },
+        { "name": "FeeAmount", "nameStart": 46, "nameEnd": 55, "depth": 0, "multiline": false, "attributes": [{ "name": "fee", "start": 56, "end": 67 }] },
+        { "name": "PaymentNote", "nameStart": 69, "nameEnd": 80, "depth": 0, "multiline": false, "attributes": [] },
+        { "name": "input", "nameStart": 82, "nameEnd": 87, "depth": 0, "multiline": false, "attributes": [{ "name": "required", "start": 88, "end": 96 }, { "name": "disabled", "start": 97, "end": 105 }] },
+        { "name": "p", "nameStart": 107, "nameEnd": 108, "depth": 0, "multiline": false, "attributes": [{ "name": "class", "start": 109, "end": 118 }] },
+        { "name": "p", "nameStart": 163, "nameEnd": 164, "depth": 0, "multiline": false, "attributes": [{ "name": "class", "start": 165, "end": 178 }] },
+        { "name": "form", "nameStart": 188, "nameEnd": 192, "depth": 0, "multiline": true, "attributes": [{ "name": "id", "start": 197, "end": 203 }, { "name": "action", "start": 252, "end": 271 }, { "name": "disabled", "start": 274, "end": 282 }, { "name": "id", "start": 285, "end": 290 }] },
+        { "name": "h2", "nameStart": 298, "nameEnd": 300, "depth": 1, "multiline": false, "attributes": [] },
+        { "name": "button", "nameStart": 320, "nameEnd": 326, "depth": 0, "multiline": true, "attributes": [{ "name": "type", "start": 331, "end": 344 }] },
+        { "name": "div", "nameStart": 356, "nameEnd": 359, "depth": 0, "multiline": true, "attributes": [] },
+        { "name": "label", "nameStart": 364, "nameEnd": 369, "depth": 0, "multiline": false, "attributes": [{ "name": "for", "start": 370, "end": 381 }, { "name": "slot", "start": 382, "end": 394 }, { "name": "if", "start": 395, "end": 401 }] }
+      ]
+    },
+    {
+      "name": "content declarations, outlets, and slot fills",
+      "source": "valid/content-slots.ktml",
+      "valid": true,
+      "elements": [
+        { "name": "section", "nameStart": 62, "nameEnd": 69, "depth": 0, "multiline": false, "attributes": [] },
+        { "name": "children", "nameStart": 74, "nameEnd": 82, "depth": 1, "multiline": false, "attributes": [] },
+        { "name": "footer", "nameStart": 85, "nameEnd": 91, "depth": 1, "multiline": false, "attributes": [] },
+        { "name": "Modal", "nameStart": 127, "nameEnd": 132, "depth": 0, "multiline": false, "attributes": [{ "name": "title", "start": 133, "end": 144 }] },
+        { "name": "p", "nameStart": 149, "nameEnd": 150, "depth": 1, "multiline": false, "attributes": [] },
+        { "name": "button", "nameStart": 189, "nameEnd": 195, "depth": 1, "multiline": false, "attributes": [{ "name": "type", "start": 196, "end": 209 }] },
+        { "name": "children", "nameStart": 219, "nameEnd": 227, "depth": 1, "multiline": false, "attributes": [] },
+        { "name": "Modal", "nameStart": 236, "nameEnd": 241, "depth": 0, "multiline": false, "attributes": [{ "name": "title", "start": 242, "end": 255 }] },
+        { "name": "slot", "nameStart": 279, "nameEnd": 283, "depth": 0, "multiline": false, "attributes": [{ "name": "name", "start": 284, "end": 295 }] }
+      ],
+      "slots": [
+        { "name": "footer", "start": 172, "end": 231, "keywordStart": 172, "keywordEnd": 176, "nameStart": 177, "nameEnd": 183 },
+        { "name": "footer", "start": 260, "end": 274, "keywordStart": 260, "keywordEnd": 264, "nameStart": 265, "nameEnd": 271 }
+      ]
+    },
+    {
+      "name": "conditions with every operator and else-if",
+      "source": "valid/conditions.ktml",
+      "valid": true,
+      "conditions": [
+        { "start": 47, "end": 149, "ifStart": 47, "ifEnd": 49, "elseStart": 98, "elseEnd": 102, "elseIf": true, "condition": { "kind": "or", "start": 50, "end": 81, "operands": [{ "kind": "and", "start": 50, "end": 57, "operands": [{ "kind": "path", "start": 50, "end": 51, "path": { "name": "a", "start": 50, "end": 51, "parts": [{ "name": "a", "start": 50, "end": 51 }] }}, { "kind": "not", "start": 55, "end": 57, "operands": [{ "kind": "path", "start": 56, "end": 57, "path": { "name": "b", "start": 56, "end": 57, "parts": [{ "name": "b", "start": 56, "end": 57 }] }}] }] }, { "kind": "group", "start": 61, "end": 81, "operands": [{ "kind": "and", "start": 62, "end": 80, "operands": [{ "kind": "presence", "start": 62, "end": 67, "path": { "name": "note", "start": 62, "end": 66, "parts": [{ "name": "note", "start": 62, "end": 66 }] }}, { "kind": "path", "start": 71, "end": 80, "path": { "name": "note.flag", "start": 71, "end": 80, "parts": [{ "name": "note", "start": 71, "end": 75 }, { "name": "flag", "start": 76, "end": 80 }] }}] }] }] }},
+        { "start": 103, "end": 149, "ifStart": 103, "ifEnd": 105, "elseStart": 129, "elseEnd": 133, "elseIf": false, "condition": { "kind": "not", "start": 106, "end": 112, "operands": [{ "kind": "presence", "start": 107, "end": 112, "path": { "name": "note", "start": 107, "end": 111, "parts": [{ "name": "note", "start": 107, "end": 111 }] }}] }},
+        { "start": 117, "end": 124, "ifStart": 117, "ifEnd": 119, "elseIf": false, "condition": { "kind": "path", "start": 120, "end": 121, "path": { "name": "a", "start": 120, "end": 121, "parts": [{ "name": "a", "start": 120, "end": 121 }] }} },
+        { "start": 159, "end": 197, "ifStart": 159, "ifEnd": 161, "elseIf": false, "condition": { "kind": "and", "start": 162, "end": 176, "operands": [{ "kind": "not", "start": 162, "end": 171, "operands": [{ "kind": "group", "start": 163, "end": 171, "operands": [{ "kind": "or", "start": 164, "end": 170, "operands": [{ "kind": "path", "start": 164, "end": 165, "path": { "name": "a", "start": 164, "end": 165, "parts": [{ "name": "a", "start": 164, "end": 165 }] }}, { "kind": "path", "start": 169, "end": 170, "path": { "name": "b", "start": 169, "end": 170, "parts": [{ "name": "b", "start": 169, "end": 170 }] }}] }] }] }, { "kind": "path", "start": 175, "end": 176, "path": { "name": "a", "start": 175, "end": 176, "parts": [{ "name": "a", "start": 175, "end": 176 }] }}] }}
+      ],
+      "elements": [
+        { "name": "span", "nameStart": 86, "nameEnd": 90, "depth": 0, "multiline": false, "attributes": [] },
+        { "name": "p", "nameStart": 138, "nameEnd": 139, "depth": 0, "multiline": false, "attributes": [] },
+        { "name": "div", "nameStart": 151, "nameEnd": 154, "depth": 0, "multiline": false, "attributes": [] },
+        { "name": "em", "nameStart": 182, "nameEnd": 184, "depth": 1, "multiline": false, "attributes": [] }
+      ]
+    },
+    {
+      "name": "element body must start on the header line",
+      "source": "invalid/detached-element-body.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 27, "end": 28 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 27, "end": 28 },
+          { "kind": "error", "start": 39, "end": 40 }
+        ]
+      }
+    },
+    {
+      "name": "parenthesized attribute list must follow the element name",
+      "source": "invalid/mixed-attribute-list.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 26, "end": 27 },
+          { "kind": "error", "start": 29, "end": 30 },
+          { "kind": "error", "start": 33, "end": 34 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 26, "end": 27 },
+          { "kind": "error", "start": 33, "end": 34 }
+        ]
+      }
+    },
+    {
+      "name": "comparison is not a condition",
+      "source": "invalid/condition-comparison.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 27, "end": 29 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 27, "end": 31 }
+        ]
+      }
+    },
+    {
+      "name": "literal is not a condition",
+      "source": "invalid/condition-literal.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 15, "end": 19 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 12, "end": 14 }
+        ]
+      }
+    },
+    {
+      "name": "double negation is not a condition",
+      "source": "invalid/condition-double-negation.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 25, "end": 27 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 25, "end": 26 }
+        ]
+      }
+    },
+    {
+      "name": "slot fill requires a braced body",
+      "source": "invalid/slot-fill-without-body.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 22, "end": 33 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 22, "end": 33 }
+        ]
+      }
+    },
+    {
+      "name": "else requires a preceding if",
+      "source": "invalid/else-without-if.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 17, "end": 21 },
+          { "kind": "error", "start": 25, "end": 26 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 17, "end": 23 },
+          { "kind": "error", "start": 25, "end": 26 }
+        ]
+      }
+    },
+    {
+      "name": "framework attribute names, doctype, and HTML comments",
+      "source": "valid/framework-attributes.ktml",
+      "valid": true,
+      "elements": [
+        {
+          "name": "html",
+          "nameStart": 110,
+          "nameEnd": 114,
+          "depth": 0,
+          "multiline": false,
+          "attributes": [
+            { "name": "lang", "start": 115, "end": 124 }
+          ]
+        },
+        {
+          "name": "body",
+          "nameStart": 129,
+          "nameEnd": 133,
+          "depth": 1,
+          "multiline": true,
+          "attributes": [
+            { "name": "x-data", "start": 139, "end": 145 },
+            { "name": "hx-ext:inherited", "start": 149, "end": 171 },
+            { "name": "@keydown.slash.window", "start": 175, "end": 206 }
+          ]
+        },
+        {
+          "name": "button",
+          "nameStart": 256,
+          "nameEnd": 262,
+          "depth": 2,
+          "multiline": false,
+          "attributes": [
+            { "name": "@click.outside", "start": 263, "end": 292 },
+            { "name": ":class", "start": 293, "end": 303 },
+            { "name": "x-on:keydown.enter", "start": 304, "end": 329 },
+            { "name": "hx-on::after-request", "start": 330, "end": 356 }
+          ]
+        },
+        {
+          "name": "div",
+          "nameStart": 360,
+          "nameEnd": 363,
+          "depth": 2,
+          "multiline": false,
+          "attributes": [
+            { "name": "x-transition.opacity.duration.100ms", "start": 364, "end": 399 },
+            { "name": "@dragover.prevent", "start": 400, "end": 417 }
+          ]
+        },
+        {
+          "name": "label",
+          "nameStart": 440,
+          "nameEnd": 445,
+          "depth": 2,
+          "multiline": false,
+          "attributes": [
+            { "name": "if:x", "start": 446, "end": 454 },
+            { "name": "for.y", "start": 455, "end": 464 }
+          ]
+        },
+        {
+          "name": "slot",
+          "nameStart": 468,
+          "nameEnd": 472,
+          "depth": 2,
+          "multiline": false,
+          "attributes": [
+            { "name": "x:y", "start": 473, "end": 480 }
+          ]
+        }
+      ],
+      "markup": [
+        { "kind": "comment", "start": 75, "end": 94, "text": " page shell " },
+        { "kind": "doctype", "start": 96, "end": 108, "name": "html" },
+        { "kind": "comment", "start": 216, "end": 252, "text": "\n\t\t\t\tmulti -- line {not}\n\t\t\t-" },
+        { "kind": "comment", "start": 418, "end": 436, "text": " same line " }
+      ]
+    },
+    {
+      "name": "colon chain is not an attribute",
+      "source": "invalid/colon-chain.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 13, "end": 18 },
+          { "kind": "error", "start": 18, "end": 19 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 13, "end": 14 }
+        ]
+      }
+    },
+    {
+      "name": "prefixed attribute name needs whitespace on a header line",
+      "source": "invalid/adjacent-prefixed-attribute.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 21, "end": 27 },
+          { "kind": "error", "start": 27, "end": 28 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 21, "end": 22 }
+        ]
+      }
+    },
+    {
+      "name": "unterminated HTML comment",
+      "source": "invalid/unterminated-html-comment.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 12, "end": 24 },
+          { "kind": "error", "start": 24, "end": 25 }
+        ],
+        "recoveredTopLevelNodes": 0
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 9, "end": 24 }
+        ]
+      }
+    },
+    {
+      "name": "doctype requires a name on its line",
+      "source": "invalid/doctype-missing-name.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 12, "end": 19 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 12, "end": 19 }
+        ]
+      }
+    },
+    {
+      "name": "attribute name must follow @ or :",
+      "source": "invalid/invalid-attribute-name.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 16, "end": 17 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 16, "end": 18 }
+        ]
+      }
+    },
+    {
+      "name": "raw-text literals",
+      "source": "valid/raw-text.ktml",
+      "valid": true,
+      "markup": [
+        { "kind": "raw-text", "start": 24, "end": 64, "text": "\n\tif (a && b < c) { go(`${x}`) }\n\t" },
+        { "kind": "raw-text", "start": 76, "end": 90, "text": "a > b {}" },
+        { "kind": "raw-text", "start": 91, "end": 100, "text": "c{}" }
+      ]
+    },
+    {
+      "name": "unterminated raw text",
+      "source": "invalid/unterminated-raw-text.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 19, "end": 22 },
+          { "kind": "error", "start": 29, "end": 30 }
+        ],
+        "recoveredTopLevelNodes": 0
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 21, "end": 26 }
+        ]
+      }
+    },
+    {
+      "name": "conditional attribute groups",
+      "source": "valid/conditional-attributes.ktml",
+      "valid": true,
+      "attributeConditions": [
+        {
+          "start": 73,
+          "end": 163,
+          "ifStart": 73,
+          "ifEnd": 75,
+          "elseStart": 113,
+          "elseEnd": 117,
+          "elseIf": true,
+          "condition": {
+            "kind": "path",
+            "start": 76,
+            "end": 83,
+            "path": {
+              "name": "current",
+              "start": 76,
+              "end": 83,
+              "parts": [
+                { "name": "current", "start": 76, "end": 83 }
+              ]
+            }
+          },
+          "then": [
+            { "name": "aria-current", "start": 86, "end": 105 },
+            { "name": "id", "start": 106, "end": 110 }
+          ],
+          "else": []
+        },
+        {
+          "start": 118,
+          "end": 163,
+          "ifStart": 118,
+          "ifEnd": 120,
+          "elseStart": 146,
+          "elseEnd": 150,
+          "elseIf": false,
+          "condition": {
+            "kind": "presence",
+            "start": 121,
+            "end": 126,
+            "path": {
+              "name": "note",
+              "start": 121,
+              "end": 125,
+              "parts": [
+                { "name": "note", "start": 121, "end": 125 }
+              ]
+            }
+          },
+          "then": [
+            { "name": "title", "start": 129, "end": 143 }
+          ],
+          "else": [
+            { "name": "data-off", "start": 153, "end": 161 }
+          ]
+        },
+        {
+          "start": 210,
+          "end": 264,
+          "ifStart": 210,
+          "ifEnd": 212,
+          "elseIf": false,
+          "condition": {
+            "kind": "and",
+            "start": 213,
+            "end": 228,
+            "operands": [
+              {
+                "kind": "not",
+                "start": 213,
+                "end": 217,
+                "operands": [
+                  {
+                    "kind": "path",
+                    "start": 214,
+                    "end": 217,
+                    "path": {
+                      "name": "six",
+                      "start": 214,
+                      "end": 217,
+                      "parts": [
+                        { "name": "six", "start": 214, "end": 217 }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "kind": "path",
+                "start": 221,
+                "end": 228,
+                "path": {
+                  "name": "current",
+                  "start": 221,
+                  "end": 228,
+                  "parts": [
+                    { "name": "current", "start": 221, "end": 228 }
+                  ]
+                }
+              }
+            ]
+          },
+          "then": [
+            { "name": "selected", "start": 231, "end": 239 }
+          ],
+          "else": []
+        },
+        {
+          "start": 240,
+          "end": 262,
+          "ifStart": 240,
+          "ifEnd": 242,
+          "elseIf": false,
+          "condition": {
+            "kind": "presence",
+            "start": 243,
+            "end": 248,
+            "path": {
+              "name": "note",
+              "start": 243,
+              "end": 247,
+              "parts": [
+                { "name": "note", "start": 243, "end": 247 }
+              ]
+            }
+          },
+          "then": [
+            { "name": "title", "start": 251, "end": 260 }
+          ],
+          "else": []
+        }
+      ]
+    },
+    {
+      "name": "conditional attribute comparison",
+      "source": "invalid/conditional-attribute-comparison.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 18, "end": 20 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 16, "end": 20 }
+        ]
+      }
+    },
+    {
+      "name": "attribute spreads and bags",
+      "source": "valid/attribute-forwarding.ktml",
+      "valid": true,
+      "forwarding": [
+        {
+          "kind": "spread",
+          "start": 76,
+          "end": 84,
+          "path": {
+            "name": "attrs",
+            "start": 79,
+            "end": 84,
+            "parts": [
+              { "name": "attrs", "start": 79, "end": 84 }
+            ]
+          }
+        },
+        {
+          "kind": "spread",
+          "start": 145,
+          "end": 152,
+          "path": {
+            "name": "mine",
+            "start": 148,
+            "end": 152,
+            "parts": [
+              { "name": "mine", "start": 148, "end": 152 }
+            ]
+          }
+        },
+        {
+          "kind": "bag",
+          "start": 170,
+          "end": 232,
+          "name": "attrs",
+          "bagStart": 176,
+          "bagEnd": 232,
+          "attributes": [
+            { "name": "required", "start": 177, "end": 185 },
+            { "name": "title", "start": 186, "end": 195 }
+          ]
+        },
+        {
+          "kind": "spread",
+          "start": 222,
+          "end": 229,
+          "path": {
+            "name": "mine",
+            "start": 225,
+            "end": 229,
+            "parts": [
+              { "name": "mine", "start": 225, "end": 229 }
+            ]
+          }
+        },
+        { "kind": "bag", "start": 250, "end": 258, "name": "attrs", "bagStart": 256, "bagEnd": 258 }
+      ]
+    },
+    {
+      "name": "spread with a space",
+      "source": "invalid/spaced-spread.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 18, "end": 21 }
+        ],
+        "recoveredTopLevelNodes": 1
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "error", "start": 18, "end": 27 }
+        ]
+      }
+    },
+    {
+      "name": "star in attribute names",
+      "source": "valid/star-attributes.ktml",
+      "valid": true,
+      "elements": [
+        {
+          "name": "form",
+          "nameStart": 17,
+          "nameEnd": 21,
+          "depth": 0,
+          "multiline": false,
+          "attributes": [
+            { "name": "hx-target-4*", "start": 22, "end": 44 },
+            { "name": "hx-target-*", "start": 45, "end": 63 }
+          ]
+        },
+        {
+          "name": "div",
+          "nameStart": 68,
+          "nameEnd": 71,
+          "depth": 0,
+          "multiline": true,
+          "attributes": [
+            { "name": "hx-target-5*", "start": 73, "end": 90 },
+            { "name": "a*b", "start": 93, "end": 96 }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "stories and fixtures",
+      "source": "valid/stories.story.ktml",
+      "valid": true,
+      "stories": [
+        {
+          "kind": "fixture",
+          "name": "report",
+          "start": 36,
+          "end": 78,
+          "keywordStart": 36,
+          "keywordEnd": 43,
+          "nameStart": 44,
+          "nameEnd": 50,
+          "type": "TrustedURL",
+          "typeStart": 52,
+          "typeEnd": 62,
+          "value": { "kind": "scalar", "start": 65, "end": 78, "literal": "string", "raw": "\"/reports/42\"" }
+        },
+        {
+          "kind": "fixture",
+          "name": "payload",
+          "start": 79,
+          "end": 129,
+          "keywordStart": 79,
+          "keywordEnd": 86,
+          "nameStart": 87,
+          "nameEnd": 94,
+          "type": "JSON",
+          "typeStart": 96,
+          "typeEnd": 100,
+          "value": { "kind": "scalar", "start": 103, "end": 129, "literal": "string", "raw": "`{\"id\": 7, \"tags\": [\"a\"]}`" }
+        },
+        {
+          "kind": "story",
+          "name": "Running",
+          "start": 131,
+          "end": 477,
+          "keywordStart": 131,
+          "keywordEnd": 136,
+          "nameStart": 142,
+          "nameEnd": 149,
+          "component": "Card",
+          "componentStart": 137,
+          "componentEnd": 141,
+          "argumentsStart": 150,
+          "argumentsEnd": 431,
+          "arguments": [
+            {
+              "name": "title",
+              "start": 153,
+              "end": 166,
+              "nameStart": 153,
+              "nameEnd": 158,
+              "value": { "kind": "scalar", "start": 161, "end": 166, "literal": "string", "raw": "\"Run\"" }
+            },
+            {
+              "name": "score",
+              "start": 169,
+              "end": 180,
+              "nameStart": 169,
+              "nameEnd": 174,
+              "value": { "kind": "scalar", "start": 177, "end": 180, "literal": "number", "raw": "4.5" }
+            },
+            {
+              "name": "open",
+              "start": 183,
+              "end": 194,
+              "nameStart": 183,
+              "nameEnd": 187,
+              "value": { "kind": "scalar", "start": 190, "end": 194, "literal": "boolean", "raw": "true" }
+            },
+            {
+              "name": "note",
+              "start": 197,
+              "end": 208,
+              "nameStart": 197,
+              "nameEnd": 201,
+              "value": { "kind": "name", "start": 204, "end": 208, "name": "None" }
+            },
+            {
+              "name": "link",
+              "start": 211,
+              "end": 224,
+              "nameStart": 211,
+              "nameEnd": 215,
+              "value": { "kind": "name", "start": 218, "end": 224, "name": "report" }
+            },
+            {
+              "name": "progress",
+              "start": 227,
+              "end": 271,
+              "nameStart": 227,
+              "nameEnd": 235,
+              "value": {
+                "kind": "name",
+                "start": 238,
+                "end": 271,
+                "name": "Running",
+                "payloadStart": 246,
+                "payloadEnd": 271,
+                "fields": [
+                  {
+                    "name": "callId",
+                    "start": 247,
+                    "end": 259,
+                    "nameStart": 247,
+                    "nameEnd": 253,
+                    "value": { "kind": "scalar", "start": 256, "end": 259, "literal": "string", "raw": "\"c\"" }
+                  },
+                  {
+                    "name": "step",
+                    "start": 261,
+                    "end": 269,
+                    "nameStart": 261,
+                    "nameEnd": 265,
+                    "value": { "kind": "scalar", "start": 268, "end": 269, "literal": "number", "raw": "2" }
+                  }
+                ]
+              }
+            },
+            {
+              "name": "idle",
+              "start": 274,
+              "end": 288,
+              "nameStart": 274,
+              "nameEnd": 278,
+              "value": { "kind": "name", "start": 281, "end": 288, "name": "Idle", "payloadStart": 286, "payloadEnd": 288 }
+            },
+            {
+              "name": "stages",
+              "start": 291,
+              "end": 342,
+              "nameStart": 291,
+              "nameEnd": 297,
+              "value": {
+                "kind": "fields",
+                "start": 300,
+                "end": 342,
+                "fields": [
+                  {
+                    "name": "recording",
+                    "start": 301,
+                    "end": 317,
+                    "nameStart": 301,
+                    "nameEnd": 310,
+                    "value": { "kind": "name", "start": 313, "end": 317, "name": "Done" }
+                  },
+                  {
+                    "name": "transcription",
+                    "start": 319,
+                    "end": 341,
+                    "nameStart": 319,
+                    "nameEnd": 332,
+                    "value": { "kind": "name", "start": 335, "end": 341, "name": "Active" }
+                  }
+                ]
+              }
+            },
+            {
+              "name": "tags",
+              "start": 345,
+              "end": 362,
+              "nameStart": 345,
+              "nameEnd": 349,
+              "value": {
+                "kind": "list",
+                "start": 352,
+                "end": 362,
+                "items": [
+                  { "kind": "scalar", "start": 353, "end": 356, "literal": "string", "raw": "\"a\"" },
+                  { "kind": "scalar", "start": 358, "end": 361, "literal": "string", "raw": "\"b\"" }
+                ]
+              }
+            },
+            {
+              "name": "rows",
+              "start": 365,
+              "end": 415,
+              "nameStart": 365,
+              "nameEnd": 369,
+              "value": {
+                "kind": "list",
+                "start": 372,
+                "end": 415,
+                "items": [
+                  {
+                    "kind": "fields",
+                    "start": 373,
+                    "end": 399,
+                    "fields": [
+                      {
+                        "name": "label",
+                        "start": 374,
+                        "end": 385,
+                        "nameStart": 374,
+                        "nameEnd": 379,
+                        "value": { "kind": "scalar", "start": 382, "end": 385, "literal": "string", "raw": "\"a\"" }
+                      },
+                      {
+                        "name": "note",
+                        "start": 387,
+                        "end": 398,
+                        "nameStart": 387,
+                        "nameEnd": 391,
+                        "value": { "kind": "name", "start": 394, "end": 398, "name": "None" }
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "fields",
+                    "start": 401,
+                    "end": 414,
+                    "fields": [
+                      {
+                        "name": "label",
+                        "start": 402,
+                        "end": 413,
+                        "nameStart": 402,
+                        "nameEnd": 407,
+                        "value": { "kind": "scalar", "start": 410, "end": 413, "literal": "string", "raw": "\"b\"" }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "notes",
+              "start": 418,
+              "end": 428,
+              "nameStart": 418,
+              "nameEnd": 423,
+              "value": { "kind": "empty", "start": 426, "end": 428 }
+            }
+          ],
+          "bodyStart": 432,
+          "bodyEnd": 477
+        },
+        { "kind": "story", "name": "Bare", "start": 479, "end": 494, "keywordStart": 479, "keywordEnd": 484, "nameStart": 490, "nameEnd": 494, "component": "Card", "componentStart": 485, "componentEnd": 489 },
+        { "kind": "story", "name": "Only", "start": 496, "end": 532, "keywordStart": 496, "keywordEnd": 501, "nameStart": 507, "nameEnd": 511, "component": "Card", "componentStart": 502, "componentEnd": 506, "bodyStart": 512, "bodyEnd": 532 },
+        {
+          "kind": "story",
+          "name": "Args",
+          "start": 534,
+          "end": 566,
+          "keywordStart": 534,
+          "keywordEnd": 539,
+          "nameStart": 545,
+          "nameEnd": 549,
+          "component": "Card",
+          "componentStart": 540,
+          "componentEnd": 544,
+          "argumentsStart": 550,
+          "argumentsEnd": 566,
+          "arguments": [
+            {
+              "name": "title",
+              "start": 551,
+              "end": 565,
+              "nameStart": 551,
+              "nameEnd": 556,
+              "value": { "kind": "scalar", "start": 559, "end": 565, "literal": "string", "raw": "\"Args\"" }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "story argument missing value",
+      "source": "invalid/story-missing-value.story.ktml",
+      "valid": false,
+      "go": {
+        "recovery": [
+          { "kind": "error", "start": 22, "end": 23 }
+        ],
+        "recoveredTopLevelNodes": 2
+      },
+      "treeSitter": {
+        "recovery": [
+          { "kind": "missing", "start": 21, "end": 21 }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+Card [state: S]
+
+Card [state = Loading,] {
+	div
+}

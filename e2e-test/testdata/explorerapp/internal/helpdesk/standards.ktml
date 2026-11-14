@@ -1,0 +1,321 @@
+// Helpdesk call standards: what a good customer call does, worded as the
+// evidence that makes each standard pass, fail, or go unscored.
+import { StandardsPageView, StandardsPageStandard, DraftingWorkspaceView, DraftingWorkspaceNote, NoteBubbleView, DraftNotesView, DraftNotesNote, CheckInputsView, CheckInputsReason, StandardCardView, MustPassInputView, OutcomeWordingView } from "./helpdesk.ktmlschema"
+import { TextField } from "../ui/form.ktml"
+import { ManagementListShell, RowActions } from "../ui/list.ktml"
+import { Dialog, ModalHeader, PlusButton } from "../ui/ui.ktml"
+
+// StandardsPage lists the call standards, each editable in place.
+StandardsPage [view: StandardsPageView] {
+	ManagementListShell id="call-standards" {
+		header class="flex flex-col gap-3 border-b border-surface0 px-4 py-5 sm:flex-row sm:items-end sm:justify-between lg:px-6" {
+			div {
+				p class="text-xs font-semibold uppercase tracking-widest text-blue" "Helpdesk settings"
+				h1 class="mt-1 text-2xl font-bold text-text" "Call standards"
+				p class="mt-1 max-w-2xl text-sm text-subtext0" "Each standard says what a bookseller should do on a customer call. Scoring uses the standards active when the analysis starts."
+			}
+			div class="flex items-center gap-4" {
+				span class="border-l-2 border-blue pl-2 text-xs font-medium text-subtext1" "{view.standardCount} standards"
+				Dialog {
+					DraftingWorkspace view="{view.draftingWorkspace}"
+					slot buttonContent {
+						PlusButton view="{view.plusButton}"
+					}
+				}
+			}
+		}
+		if view.hasError {
+			div role="alert" class="border-b border-red/30 bg-red/10 px-4 py-3 text-sm text-red" "{view.error}"
+		}
+		" "
+		section aria-labelledby="active-call-standards" {
+			h2 id="active-call-standards" class="sr-only" "Active call standards"
+			if view.noStandards {
+				div class="px-6 py-16 text-center text-sm text-subtext0" "No standards yet. Add one before sending calls for analysis."
+			}
+			div class="divide-y divide-surface0" {
+				for standard in view.standards key standard.key {
+					StandardCard view="{standard.standardCard}"
+				}
+			}
+		}
+	}
+}
+
+// DraftingWorkspace drafts a standard in conversation with a writing
+// assistant, which checks the wording before it can be saved.
+DraftingWorkspace [view: DraftingWorkspaceView] {
+	div id="drafting-workspace" class="flex h-full min-h-0 flex-col bg-base" {
+		ModalHeader {
+			div {
+				h2 class="text-base font-semibold text-text" "Draft a call standard"
+				p class="text-xs text-subtext0" "Describe what a bookseller should do. The assistant only sees what you write here."
+			}
+		}
+		form class="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-2" {
+			section (
+				aria-labelledby="drafting-notes-heading"
+				class="flex min-h-[20rem] flex-col border-b border-surface0 bg-mantle lg:border-b-0 lg:border-r"
+			) {
+				h3 id="drafting-notes-heading" class="sr-only" "Drafting conversation"
+				div class="flex-1 space-y-3 overflow-y-auto p-4" {
+					if view.noNotes {
+						div class="border-l-2 border-blue bg-blue/5 p-3 text-sm leading-6 text-subtext1" "Describe one thing a listener could hear on the call, and when it should pass, fail, or go unscored."
+					}
+					for note in view.notes key note.key {
+						NoteBubble view="{note.noteBubble}"
+					}
+				}
+				div class="border-t border-surface0 p-4" {
+					DraftNotes view="{view.draftNotes}"
+					label class="block text-xs font-medium text-subtext1" {
+						"Your note"
+						textarea (
+							name="note"
+							maxlength="4000"
+							rows="3"
+							class="mt-1 w-full rounded-lg border border-surface1 bg-base p-3 text-sm text-text focus:border-blue focus:outline-none"
+							placeholder="Booksellers should offer to reserve a title that is out of stock."
+						)
+					}
+					" "
+					button (
+						type="submit"
+						formnovalidate
+						hx-post="/call-audits/standards/assistant"
+						hx-target="#drafting-workspace"
+						hx-swap="outerHTML"
+						hx-disabled-elt="this"
+						class="mt-3 inline-flex items-center gap-2 rounded-lg bg-blue px-4 py-2 text-sm font-semibold text-crust"
+					) {
+						i (
+							class="fas fa-spinner hidden animate-spin [.htmx-request_&]:inline-block"
+							aria-hidden="true"
+						)
+						"Check the draft"
+					}
+				}
+			}
+			section aria-labelledby="draft-heading" class="space-y-4 p-5" {
+				div {
+					p class="text-xs font-semibold uppercase tracking-widest text-blue" "Draft"
+					h3 id="draft-heading" class="mt-1 text-lg font-semibold text-text" "Standard"
+					p class="mt-1 text-xs text-subtext0" "Edit the wording, then check it again."
+				}
+				if view.hasError {
+					div role="alert" class="border border-red/30 bg-red/10 px-3 py-2 text-sm text-red" "{view.error}"
+				}
+				div class="space-y-4" {
+					TextField (
+						label="Identifier"
+						inputType="text"
+						name="id"
+						value="{view.draftID}"
+						attrs=(
+							pattern="[A-Z][A-Z0-9_]*"
+							placeholder="OFFERS_RESERVATION"
+							required
+						)
+					)
+					MustPassInput view="{view.mustPassInput}"
+					OutcomeWording view="{view.outcomeWording}"
+					CheckInputs view="{view.checkInputs}"
+					if view.checked {
+						div class="{view.checkClass}" {
+							strong "{view.checkStatus}"
+							span class="mt-1 block text-subtext1" "{view.checkSummary}"
+						}
+					}
+					if view.canOverride {
+						label class="flex items-center gap-2 text-sm text-text" {
+							input type="checkbox" name="override" value="true" class="h-4 w-4 accent-yellow"
+							"Save anyway"
+						}
+						" "
+						label class="block text-xs font-medium text-yellow" {
+							"Why save it anyway?"
+							textarea (
+								name="override_reason"
+								maxlength="1000"
+								rows="2"
+								class="mt-1 w-full rounded-lg border border-yellow/40 bg-base p-3 text-sm text-text focus:border-yellow focus:outline-none"
+							)
+						}
+						" "
+					}
+					if view.canSave {
+						button (
+							type="submit"
+							hx-post="/call-audits/standards"
+							hx-target="#call-standards"
+							hx-swap="outerHTML"
+							hx-on::before-swap="if(event.detail.xhr.status === 422) event.detail.shouldSwap = true"
+							hx-on::after-request="if(event.detail.successful) document.getElementById('app-dialog').close()"
+							class="rounded-lg bg-green px-4 py-2 text-sm font-semibold text-crust"
+						) "Save standard"
+					} else {
+						p class="text-xs text-subtext0" "A draft can be saved once its check passes. The shop owner may save a draft whose check failed."
+					}
+				}
+			}
+		}
+	}
+}
+
+// NoteBubble is one note of the drafting conversation.
+NoteBubble [view: NoteBubbleView] {
+	article class="{view.class}" {
+		p class="mb-1 text-[10px] font-bold uppercase tracking-wider text-subtext0" "{view.author}"
+		p class="whitespace-pre-wrap" "{view.text}"
+	}
+}
+
+// DraftNotes carries the conversation so far with the next note.
+DraftNotes [view: DraftNotesView] {
+	for note in view.notes key note.key {
+		input type="hidden" name="note_author" value="{note.author}"
+		" "
+		input type="hidden" name="note_text" value="{note.text}"
+	}
+}
+
+// CheckInputs carries the signed check of the draft, so saving can prove
+// the wording it saves is the wording that was checked.
+CheckInputs [view: CheckInputsView] {
+	input type="hidden" name="check_approved" value="{view.approved}"
+	" "
+	input type="hidden" name="check_summary" value="{view.summary}"
+	" "
+	input type="hidden" name="check_checker" value="{view.checker}"
+	" "
+	input type="hidden" name="check_checker_version" value="{view.checkerVersion}"
+	" "
+	input type="hidden" name="check_draft_digest" value="{view.draftDigest}"
+	" "
+	input type="hidden" name="check_signature" value="{view.signature}"
+	" "
+	for reason in view.reasons key reason.key {
+		input type="hidden" name="check_reason" value="{reason.code}"
+	}
+}
+
+// StandardCard edits one standard; every change saves.
+StandardCard [view: StandardCardView] {
+	article (
+		id="call-standard-{view.standardID}"
+		if view.archived { class="bg-base px-4 py-5 opacity-60 lg:px-6" } else { class="bg-base px-4 py-5 lg:px-6" }
+	) {
+		form (
+			hx-put="/call-audits/standards/{view.standardID}"
+			hx-trigger="change"
+			hx-target="closest article"
+			hx-swap="outerHTML focus-scroll:false"
+		) {
+			input type="hidden" name="id" value="{view.standardID}"
+			header class="flex items-center justify-between gap-4" {
+				div {
+					h3 class="font-mono text-sm font-semibold text-text" "{view.standardID}"
+					span class="{view.class}" {
+						if view.archived {
+							"Archived"
+						} else {
+							"Active"
+						}
+					}
+					" "
+					if view.mustPass {
+						span class="ml-2 border-l-2 border-red bg-red/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red" "Must pass"
+					}
+				}
+				span class="text-xs text-subtext0" "Saved as you type"
+			}
+			if view.hasError {
+				div role="alert" class="mt-3 border border-red/30 bg-red/10 px-3 py-2 text-sm text-red" "{view.error}"
+			}
+			div class="mt-4 space-y-4" {
+				MustPassInput view="{view.mustPassInput}"
+				OutcomeWording view="{view.outcomeWording}"
+			}
+		}
+		div class="mt-4 flex justify-end border-t border-surface0 pt-3" {
+			RowActions {
+				if view.archived {
+					form (
+						hx-post="/call-audits/standards/{view.standardID}/restore"
+						hx-target="#call-standards"
+						hx-swap="outerHTML"
+					) {
+						input type="hidden" name="id" value="{view.standardID}"
+						button class="text-xs font-semibold text-green" "Restore"
+					}
+				} else {
+					form (
+						hx-post="/call-audits/standards/{view.standardID}/archive"
+						hx-target="#call-standards"
+						hx-swap="outerHTML"
+						hx-confirm="Archive this standard? Later analyses will not score it."
+					) {
+						input type="hidden" name="id" value="{view.standardID}"
+						button class="text-xs font-semibold text-yellow" "Archive"
+					}
+				}
+			}
+		}
+	}
+}
+
+// MustPassInput marks a standard whose failure flags the whole call.
+MustPassInput [view: MustPassInputView] {
+	label class="flex items-start gap-3 border border-red/20 bg-red/5 p-3 text-sm text-text" {
+		input type="hidden" name="must_pass" value="false"
+		" "
+		input (
+			type="checkbox"
+			name="must_pass"
+			value="true"
+			checked="{view.checked}"
+			class="mt-0.5 h-4 w-4 accent-red"
+		)
+		" "
+		span {
+			strong class="block text-red" "Must pass"
+			span class="mt-0.5 block text-xs leading-5 text-subtext0" "A call that fails this standard is flagged for a team lead."
+		}
+	}
+}
+
+// OutcomeWording says what evidence makes the standard pass, fail, or go
+// unscored.
+OutcomeWording [view: OutcomeWordingView] {
+	div class="grid gap-4 lg:grid-cols-3" {
+		label class="block text-xs font-medium text-green" {
+			"Passes when"
+			textarea (
+				name="pass_when"
+				required
+				rows="5"
+				class="mt-1 w-full rounded-lg border border-surface1 bg-base p-3 text-sm leading-5 text-text focus:border-green focus:outline-none"
+			) "{view.pass}"
+		}
+		" "
+		label class="block text-xs font-medium text-red" {
+			"Fails when"
+			textarea (
+				name="fail_when"
+				required
+				rows="5"
+				class="mt-1 w-full rounded-lg border border-surface1 bg-base p-3 text-sm leading-5 text-text focus:border-red focus:outline-none"
+			) "{view.fail}"
+		}
+		" "
+		label class="block text-xs font-medium text-yellow" {
+			"Unscored when"
+			textarea (
+				name="unscored_when"
+				required
+				rows="5"
+				class="mt-1 w-full rounded-lg border border-surface1 bg-base p-3 text-sm leading-5 text-text focus:border-yellow focus:outline-none"
+			) "{view.unscored}"
+		}
+	}
+}

@@ -1,0 +1,195 @@
+===
+Nested keyed repetitions
+===
+
+Board [groups: [Group]] {
+  for group in groups key group.id {
+    h2
+    for card in group.cards key card.id {
+      p
+    }
+  }
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list
+      (parameter
+        (identifier)
+        (type
+          (collection_type
+            (type
+              (identifier))))))
+    (element_body
+      (keyed_repetition
+        item: (identifier)
+        collection: (path
+          (identifier))
+        key: (path
+          (identifier)
+          (identifier))
+        body: (element_body
+          (element
+            name: (identifier))
+          (keyed_repetition
+            item: (identifier)
+            collection: (path
+              (identifier)
+              (identifier))
+            key: (path
+              (identifier)
+              (identifier))
+            body: (element_body
+              (element
+                name: (identifier)))))))))
+
+===
+Scalar item key and empty body
+===
+
+Tags [tags: [string]] {
+  ul {
+    for tag in tags key tag {}
+  }
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list
+      (parameter
+        (identifier)
+        (type
+          (collection_type
+            (type
+              (identifier))))))
+    (element_body
+      (element
+        name: (identifier)
+        child: (element_body
+          (keyed_repetition
+            item: (identifier)
+            collection: (path
+              (identifier))
+            key: (path
+              (identifier))
+            body: (element_body)))))))
+
+===
+Keyed repetition inside a render clause body
+===
+
+Results [state = Loaded, items] {
+  for item in items key item.id {
+    li
+  }
+}
+
+---
+
+(source_file
+  (render_clause
+    name: (identifier)
+    selector: (identifier)
+    pattern: (pattern
+      name: (identifier))
+    binding: (payload_binding
+      field: (identifier))
+    body: (element_body
+      (keyed_repetition
+        item: (identifier)
+        collection: (path
+          (identifier))
+        key: (path
+          (identifier)
+          (identifier))
+        body: (element_body
+          (element
+            name: (identifier)))))))
+
+===
+Element before a repetition is a sibling, and for stays an attribute name
+===
+
+Field [xs: [string]] {
+  ul for x in xs key x {}
+  label for="email"
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list
+      (parameter
+        (identifier)
+        (type
+          (collection_type
+            (type
+              (identifier))))))
+    (element_body
+      (element
+        name: (identifier))
+      (keyed_repetition
+        item: (identifier)
+        collection: (path
+          (identifier))
+        key: (path
+          (identifier))
+        body: (element_body))
+      (element
+        name: (identifier)
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal)))))))
+
+===
+Repetition requires a key
+:error
+===
+
+C [] { for x in xs { } }
+
+---
+
+
+
+===
+Repetition path rejects spaced separators
+:error
+===
+
+C [] { for x in a . b key x { } }
+
+---
+
+
+
+===
+Repetition requires a braced body
+:error
+===
+
+C [] { for x in xs key x }
+
+---
+
+
+
+===
+Top-level repetition is not a declaration
+:error
+===
+
+for x in xs key x {}
+
+---
+
+

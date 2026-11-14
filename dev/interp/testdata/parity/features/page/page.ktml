@@ -1,0 +1,111 @@
+import { Item, Load } from "../model/model.ktmlschema"
+import { Card, Anchor } from "../ui/ui.ktml"
+
+Page [load: Load, title: string, admin: boolean, user?: string, banner: string = "<b>default</b>", data: JSONValue, handler: TrustedScript] default {
+	p "Archived or pending: {title}"
+}
+
+Page [load = Failed, reason, retry] {
+	doctype html
+	<!-- failed -->
+	p class="error" "{reason}"
+	if retry? {
+		a href="{retry}" "Retry"
+	}
+}
+
+Page [load = Ready, items, total] {
+	doctype html
+	<!-- ready: "list" & <items> -->
+	html lang="en" {
+		body {
+			header {
+				if user? && admin {
+					b "Admin {user}"
+				} else if user? {
+					span "{user}"
+				} else {
+					span "Guest"
+				}
+				if !(admin || user?) {
+					i "anonymous"
+				}
+			}
+			Card title="{title}" level=3 {
+				ul {
+					for item in items key item.id {
+						li id="item-{item.slug}" data-price="{item.price}" {
+							Row item="{item}" data="{data}" handler="{handler}"
+							Card title="{item.title}" ratio=0.000001 {
+								for link in item.links key link.label {
+									Anchor link="{link}" data="{data}" handler="{handler}"
+								}
+							}
+						}
+					}
+				}
+				slot foot {
+					p "{total} items - {banner}"
+				}
+			}
+			input type="checkbox" checked disabled="{admin}" value="true"
+		}
+	}
+}
+
+Row [item: Item, data: JSONValue, handler: TrustedScript] {
+	span "{item.title}"
+	if item.note? {
+		small "{item.note}"
+	}
+	for link in item.links key link.label {
+		Anchor link="{link}" data="{data}" handler="{handler}" busy=true
+	}
+	if item.tags? {
+		for tag in item.tags key tag {
+			em "{tag}"
+		}
+	}
+}
+
+Toggle [on: boolean, children?: content]
+
+Toggle [on = true] {
+	b "on"
+	children
+}
+
+Toggle [on = false] {
+	i "off"
+}
+
+Maybe [label?: string] default {
+	p "none"
+}
+
+Maybe [label = Some, value as text] {
+	p "{text}"
+}
+
+Status [load: Load]
+
+Status [load = Pending] {
+	i "pending"
+}
+
+Status [load = Failed, reason] {
+	i "{reason}"
+}
+
+Status [load = Ready, total] {
+	i "{total}"
+}
+
+Status [load = Archived] {
+	i "archived"
+}
+
+Frame [load: Load, label: string] {
+	div "{label}"
+	Status load="{load}"
+}

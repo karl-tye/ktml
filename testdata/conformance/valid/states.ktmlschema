@@ -1,0 +1,13 @@
+import { Address } from "./records.ktmlschema"
+
+// Presentation States
+state SearchState {
+	Loading,
+	Loaded [
+		items: [Address],
+		total?: integer,
+	],
+	Failed [state: string],
+}
+
+state Toggle { On, Off }

@@ -1,0 +1,78 @@
+// Host Schema of the reader reviews dashboard: one month of reviews left
+// by bookshop customers, credited to the bookseller who recommended the
+// book.
+
+// Page wraps the dashboard in the bookshop's page.
+record PageView [
+	dashboard: DashboardView,
+]
+
+// Dashboard shows one month's reviews with links to the months either side.
+record DashboardView [
+	month: string,
+	year: string,
+	previousMonthHref: URL,
+	nextMonthHref: URL,
+	newReviewForm: NewReviewFormView,
+	reviewsGrid: ReviewsGridView,
+]
+
+// NewReviewForm records a review a customer left at the till or by post.
+record NewReviewFormView [
+	month: string,
+	year: string,
+	booksellerID: string,
+	canChooseBookseller: boolean,
+	booksellers: [NewReviewFormBookseller],
+	actorID: string,
+	latestDate: string,
+]
+
+// A bookseller the review can be credited to.
+record NewReviewFormBookseller [
+	key: string,
+	id: string,
+	selected: boolean,
+	name: string,
+]
+
+// ReviewsGrid lists the month's reviews as cards.
+record ReviewsGridView [
+	reviewCount: integer,
+	noReviews: boolean,
+	reviews: [ReviewsGridReview],
+]
+
+// A review in the grid.
+record ReviewsGridReview [
+	key: string,
+	reviewCard: ReviewCardView,
+]
+
+// ReviewCard is one reader's review of one book.
+record ReviewCardView [
+	reviewID: string,
+	reader: string,
+	bookTitle: string,
+	starRating: StarRatingView,
+	reviewDate: string,
+	text: string,
+	published: boolean,
+	canPublish: boolean,
+	month: string,
+	year: string,
+	booksellerID: string,
+	canDelete: boolean,
+]
+
+// starRating shows a rating out of five.
+record StarRatingView [
+	stars: [StarRatingStar],
+	ratingLabel: string,
+]
+
+// One of the five stars.
+record StarRatingStar [
+	key: integer,
+	filled: boolean,
+]

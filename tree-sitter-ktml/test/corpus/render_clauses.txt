@@ -1,0 +1,256 @@
+===
+State declarations with nullary and payload variants
+===
+
+state SearchState {
+  Loading,
+  Loaded [
+    items: [SearchItem],
+    total?: integer,
+  ],
+  Failed [state: string, record: string],
+}
+state Empty {}
+state Inline { A [], B }
+
+---
+
+(source_file
+  (state_declaration
+    name: (identifier)
+    (variant_declaration
+      name: (identifier))
+    (variant_declaration
+      name: (identifier)
+      payload: (variant_payload
+        (field_declaration
+          name: (identifier)
+          type: (type
+            (collection_type
+              (type
+                (identifier)))))
+        (field_declaration
+          name: (identifier)
+          type: (type
+            (identifier)))))
+    (variant_declaration
+      name: (identifier)
+      payload: (variant_payload
+        (field_declaration
+          name: (identifier)
+          type: (type
+            (identifier)))
+        (field_declaration
+          name: (identifier)
+          type: (type
+            (identifier))))))
+  (state_declaration
+    name: (identifier))
+  (state_declaration
+    name: (identifier)
+    (variant_declaration
+      name: (identifier)
+      payload: (variant_payload))
+    (variant_declaration
+      name: (identifier))))
+
+===
+Bodyless signature and clauses with qualified patterns and aliases
+===
+
+SearchResults [state: SearchState, query: string]
+
+SearchResults [state = Loading] {
+  SearchSkeleton
+}
+
+SearchResults [state = SearchState.Loaded, items, total as count] {
+  "{count}"
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list
+      (parameter
+        (identifier)
+        (type
+          (identifier)))
+      (parameter
+        (identifier)
+        (type
+          (identifier)))))
+  (render_clause
+    name: (identifier)
+    selector: (identifier)
+    pattern: (pattern
+      name: (identifier))
+    body: (element_body
+      (element
+        name: (identifier))))
+  (render_clause
+    name: (identifier)
+    selector: (identifier)
+    pattern: (pattern
+      qualifier: (identifier)
+      name: (identifier))
+    binding: (payload_binding
+      field: (identifier))
+    binding: (payload_binding
+      field: (identifier)
+      alias: (identifier))
+    body: (element_body
+      (text
+        (interpolated_string
+          (interpolation
+            (path
+              (identifier))))))))
+
+===
+Default signature with Some and None clauses
+===
+
+Subtitle [subtitle?: string] default {
+  span
+}
+
+Subtitle [subtitle = Some, value as text] { "{text}" }
+
+Subtitle [subtitle = None] {}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list
+      (parameter
+        (identifier)
+        (type
+          (identifier))))
+    (element_body
+      (element
+        name: (identifier))))
+  (render_clause
+    name: (identifier)
+    selector: (identifier)
+    pattern: (pattern
+      name: (identifier))
+    binding: (payload_binding
+      field: (identifier)
+      alias: (identifier))
+    body: (element_body
+      (text
+        (interpolated_string
+          (interpolation
+            (path
+              (identifier)))))))
+  (render_clause
+    name: (identifier)
+    selector: (identifier)
+    pattern: (pattern
+      name: (identifier))
+    body: (element_body)))
+
+===
+Boolean clauses
+===
+
+Toggle [on: boolean = false]
+
+Toggle [on = true] { "on" }
+
+Toggle [on = false] { "off" }
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list
+      (parameter
+        (identifier)
+        (type
+          (identifier))
+        (default_value
+          (boolean_literal)))))
+  (render_clause
+    name: (identifier)
+    selector: (identifier)
+    pattern: (pattern
+      name: (identifier))
+    body: (element_body
+      (text
+        (string_literal))))
+  (render_clause
+    name: (identifier)
+    selector: (identifier)
+    pattern: (pattern
+      name: (identifier))
+    body: (element_body
+      (text
+        (string_literal)))))
+
+===
+Legacy string and number overrides stay overrides
+===
+
+Button [disabled="true"] {
+  button
+}
+Button [size = 2] { button }
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list
+      (override_declaration
+        name: (identifier)
+        value: (string_literal)))
+    (element_body
+      (element
+        name: (identifier))))
+  (component_definition
+    (identifier)
+    (parameter_list
+      (override_declaration
+        name: (identifier)
+        value: (number_literal)))
+    (element_body
+      (element
+        name: (identifier)))))
+
+===
+Default and state stay usable as element names
+===
+
+Card [state: string] {
+  default {
+    state
+  }
+}
+default {}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list
+      (parameter
+        (identifier)
+        (type
+          (identifier))))
+    (element_body
+      (element
+        (identifier)
+        (element_body
+          (element
+            (identifier))))))
+  (element
+    (identifier)
+    (element_body)))

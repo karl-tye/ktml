@@ -1,0 +1,35 @@
+==================
+Raw-text literals in script and style
+==================
+
+Page [] {
+  script defer ```
+  if (a && b < c) { go(`${x}`) }
+  ```
+  style {
+    ```a > b {}``` ```c{}```
+  }
+  script ``
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list)
+    (element_body
+      (element
+        (identifier)
+        (attribute
+          (attribute_name))
+        (raw_text))
+      (element
+        (identifier)
+        (element_body
+          (raw_text)
+          (raw_text)))
+      (element
+        (identifier)
+        (text
+          (string_literal))))))

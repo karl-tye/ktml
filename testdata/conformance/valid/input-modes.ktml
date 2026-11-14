@@ -1,0 +1,1 @@
+Card [title: string, subtitle?: string, enabled: boolean = false, count: number = 0, label: string = ""] { div }

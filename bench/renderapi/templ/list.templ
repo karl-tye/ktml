@@ -1,0 +1,25 @@
+package tpl
+
+import (
+	"strconv"
+
+	"github.com/karl-tye/ktml/bench/renderapi/model"
+)
+
+templ ListHeavy(entries []model.Entry) {
+	<ul class="entries">
+		for i := range entries {
+			<li class="entry" data-score={ strconv.FormatInt(entries[i].Score, 10) }>
+				<h3>{ entries[i].Title }</h3>
+				if entries[i].Note != nil {
+					<p class="note">{ *entries[i].Note }</p>
+				}
+				<ul class="tags">
+					for _, tag := range entries[i].Tags {
+						<li class="tag">{ tag.Label }</li>
+					}
+				</ul>
+			</li>
+		}
+	</ul>
+}

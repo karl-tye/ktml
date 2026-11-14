@@ -1,0 +1,52 @@
+package widgets
+
+import (
+	"fmt"
+	"time"
+)
+
+// Badge is a direct template: scalar inputs only.
+templ Badge(label string, count int, strong bool) {
+	if strong {
+		<strong class="badge">{ label } { count }</strong>
+	} else {
+		<span class="badge">{ label }</span>
+	}
+	<input type="checkbox" checked?={ !strong } disabled?={ strong }/>
+}
+
+// Meter needs a presenter: it formats.
+templ Meter(value float64) {
+	<meter value={ fmt.Sprint(value) }>{ fmt.Sprintf("%.1f%%", value*100) }</meter>
+}
+
+// Card wraps children and an optional icon, and forwards attributes.
+templ Card(title string, icon templ.Component, attrs templ.Attributes) {
+	<section class="card" { attrs... }>
+		if icon != nil {
+			<span class="icon">@icon</span>
+		}
+		<h2>{ title }</h2>
+		{ children... }
+	</section>
+}
+
+// Toolbar renders every component it is given, and a button slot that
+// shadows the button element.
+templ Toolbar(button templ.Component, actions ...templ.Component) {
+	<div class="toolbar">
+		<button type="button">Menu</button>
+		@button
+		if len(actions) > 0 {
+			for _, action := range actions {
+				@action
+			}
+		}
+	</div>
+}
+
+// Stamp reads the clock.
+templ Stamp(label string) {
+	{{ now := time.Now().UTC() }}
+	<time datetime={ now.Format("2006-01-02") }>{ label }</time>
+}

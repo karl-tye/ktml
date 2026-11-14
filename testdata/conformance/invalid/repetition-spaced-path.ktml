@@ -1,0 +1,3 @@
+List [xs: [string]] {
+	for x in a . b key x {}
+}

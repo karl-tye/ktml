@@ -1,0 +1,35 @@
+{
+  "dev": {
+    "port": 3000,
+    "proxy_target": "http://localhost:8080",
+    "build": ["go", "build", "-o", "{binary}", "./cmd/server"],
+    "command": ["{binary}"],
+    "watch": ["*.ktml"],
+    "restart_watch": ["*.go"]
+  },
+  "plugin": {
+    "gohtml": {
+      "path": "../plugins/gohtml.wasm",
+      "outputs": [{"dir": ".", "suffixes": [".html", ".ktml.go"]}],
+      "allow_read": ["."]
+    },
+    "alpine": {
+      "path": "../plugins/alpine.wasm",
+      "allow_read": ["."]
+    },
+    "htmx": {
+      "path": "../plugins/htmx.wasm",
+      "allow_read": ["."],
+      "settings": {
+        "chi": {
+          "dir": "."
+        }
+      }
+    }
+  },
+  "resolution": {
+    "generate": "gohtml",
+    "format": ["gohtml"],
+    "lsp": ["gohtml", "htmx", "alpine"]
+  }
+}

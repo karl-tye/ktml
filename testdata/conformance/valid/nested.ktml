@@ -1,0 +1,7 @@
+Page[] {
+  main#content {
+    section {
+      "Hello"
+    }
+  }
+}

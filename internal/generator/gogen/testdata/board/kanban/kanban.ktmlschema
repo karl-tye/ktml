@@ -1,0 +1,22 @@
+record Tag [
+	id: integer,
+	label: string,
+]
+
+record Card [
+	id: string,
+	title: string,
+	note?: string,
+	tags: [Tag],
+]
+
+record Column [
+	id: integer,
+	title: string,
+	cards: [Card],
+]
+
+state BoardState {
+	Loading,
+	Ready [columns: [Column]],
+}

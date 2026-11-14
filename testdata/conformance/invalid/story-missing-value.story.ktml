@@ -1,0 +1,2 @@
+story Card.A [title = , open = true]
+story Card.B [title = "b"]

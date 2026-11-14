@@ -1,0 +1,25 @@
+import { Button, Card } from "./ui"
+import { Layout as Page } from "./layout"
+
+TodoApp (todos: string[], apiUrl: string) {
+  Page:title="Todo App"
+    div#app
+      form
+        hx-post   "{apiUrl}/todos"
+        hx-target "#todo-list"
+        input
+          name        "task"
+          type        "text"
+          placeholder "Add a todo..."
+
+        Button:variant="primary":type="submit"
+          "Add Todo"
+
+      div#todo-list
+        for todo in todos
+          Card:title=todo
+            button
+              hx-delete "{apiUrl}/todos/{todo}"
+              hx-target "#{todo-list}"
+              "Delete"
+}

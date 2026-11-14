@@ -1,0 +1,463 @@
+===
+A newline ends an element's attribute list
+===
+
+Panel [fee: Money] {
+  div id="a"
+  div id="b"
+  FeeAmount fee="{fee}"
+  input required disabled
+  p class="x" // note
+  "sibling text"
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list
+      (parameter
+        (identifier)
+        (type
+          (identifier))))
+    (element_body
+      (element
+        (identifier)
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal))))
+      (element
+        (identifier)
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal))))
+      (element
+        (identifier)
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (interpolated_string
+              (interpolation
+                (path
+                  (identifier)))))))
+      (element
+        (identifier)
+        (attribute
+          (attribute_name))
+        (attribute
+          (attribute_name)))
+      (element
+        (identifier)
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal))))
+      (comment)
+      (text
+        (string_literal)))))
+
+===
+Shorthand values and text children stay on the header line
+===
+
+Panel [] {
+  p class "value" "child"
+  p class
+  "sibling"
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list)
+    (element_body
+      (element
+        (identifier)
+        (attribute
+          (attribute_name)
+          (string_literal))
+        (text
+          (string_literal)))
+      (element
+        (identifier)
+        (attribute
+          (attribute_name)))
+      (text
+        (string_literal)))))
+
+===
+Continuation group with a body, a text child, and an empty group
+===
+
+Panel [] {
+  form (
+    id="f"
+    // the action
+    action="{a}"
+    disabled
+    #main
+  ) {
+    h2 "Take Payment"
+  }
+  button (
+    type="button"
+  ) "Back"
+  div ()
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list)
+    (element_body
+      (element
+        (identifier)
+        (attribute_group
+          (attribute
+            (attribute_name)
+            (attribute_value
+              (string_literal)))
+          (comment)
+          (attribute
+            (attribute_name)
+            (attribute_value
+              (interpolated_string
+                (interpolation
+                  (path
+                    (identifier))))))
+          (attribute
+            (attribute_name))
+          (attribute
+            (element_id
+              (identifier))))
+        (element_body
+          (element
+            (identifier)
+            (text
+              (string_literal)))))
+      (element
+        (identifier)
+        (attribute_group
+          (attribute
+            (attribute_name)
+            (attribute_value
+              (string_literal))))
+        (text
+          (string_literal)))
+      (element
+        (identifier)
+        (attribute_group)))))
+
+===
+Attributes named for, if, and slot, and the HTML slot element
+===
+
+Panel [] {
+  label for="email" slot="title" if="x"
+  slot name="html"
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list)
+    (element_body
+      (element
+        (identifier)
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal)))
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal)))
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal))))
+      (element
+        (identifier)
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal)))))))
+
+===
+Same-line if and for start siblings
+===
+
+Panel [a: boolean, xs: [string]] {
+  div class="x" if a {}
+  ul for x in xs key x {}
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list
+      (parameter
+        (identifier)
+        (type
+          (identifier)))
+      (parameter
+        (identifier)
+        (type
+          (collection_type
+            (type
+              (identifier))))))
+    (element_body
+      (element
+        (identifier)
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal))))
+      (condition_node
+        (path_condition
+          (path
+            (identifier)))
+        (element_body))
+      (element
+        (identifier))
+      (keyed_repetition
+        (identifier)
+        (path
+          (identifier))
+        (path
+          (identifier))
+        (element_body)))))
+
+===
+Slot fills and content outlets in a call body
+===
+
+Page [children: content, footer?: content] {
+  Modal title="Pay" {
+    p "Choose"
+    slot footer {
+      button "Pay"
+      footer
+    }
+    slot actions {}
+    children
+  }
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list
+      (parameter
+        (identifier)
+        (type
+          (identifier)))
+      (parameter
+        (identifier)
+        (type
+          (identifier))))
+    (element_body
+      (element
+        (identifier)
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal)))
+        (element_body
+          (element
+            (identifier)
+            (text
+              (string_literal)))
+          (slot_fill
+            (identifier)
+            (element_body
+              (element
+                (identifier)
+                (text
+                  (string_literal)))
+              (element
+                (identifier))))
+          (slot_fill
+            (identifier)
+            (element_body))
+          (element
+            (identifier)))))))
+
+===
+Conditions with every operator and an else-if chain
+===
+
+Badge [a: boolean, b: boolean, note?: Note] {
+  if a && !b || (note? && note.flag) {
+    span "x"
+  } else if !note? {
+  }
+  else {
+    p "none"
+  }
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list
+      (parameter
+        (identifier)
+        (type
+          (identifier)))
+      (parameter
+        (identifier)
+        (type
+          (identifier)))
+      (parameter
+        (identifier)
+        (type
+          (identifier))))
+    (element_body
+      (condition_node
+        (or_condition
+          (and_condition
+            (path_condition
+              (path
+                (identifier)))
+            (not_condition
+              (path_condition
+                (path
+                  (identifier)))))
+          (group_condition
+            (and_condition
+              (presence_condition
+                (path
+                  (identifier)))
+              (path_condition
+                (path
+                  (identifier)
+                  (identifier))))))
+        (element_body
+          (element
+            (identifier)
+            (text
+              (string_literal))))
+        (condition_node
+          (not_condition
+            (presence_condition
+              (path
+                (identifier))))
+          (element_body)
+          (element_body
+            (element
+              (identifier)
+              (text
+                (string_literal)))))))))
+
+===
+Comparison is not a condition
+:error
+===
+
+Badge [a: boolean] {
+  if a == b {}
+}
+
+---
+
+
+
+===
+Literal is not a condition
+:error
+===
+
+Badge [] {
+  if true {}
+}
+
+---
+
+
+
+===
+Double negation is not a condition
+:error
+===
+
+Badge [a: boolean] {
+  if !!a {}
+}
+
+---
+
+
+
+===
+Element body must start on the header line
+:error
+===
+
+Panel [] {
+  div class="x"
+  {
+    span
+  }
+}
+
+---
+
+
+
+===
+Parenthesized list must directly follow the element name
+:error
+===
+
+Panel [] {
+  div class="x" (id="y")
+}
+
+---
+
+
+
+===
+Slot fill requires a braced body
+:error
+===
+
+Panel [] {
+  Modal {
+    slot footer
+  }
+}
+
+---
+
+
+
+===
+Else without if
+:error
+===
+
+Panel [] {
+  div
+  else {}
+}
+
+---
+
+

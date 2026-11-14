@@ -1,0 +1,8 @@
+record Link [
+	id: integer,
+	label: string,
+	title: string,
+	description: string,
+	href: URL,
+	download: TrustedURL,
+]

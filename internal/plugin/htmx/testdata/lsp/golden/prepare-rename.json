@@ -1,0 +1,17 @@
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": {
+    "placeholder": "/vendors/{id}/approve",
+    "range": {
+      "end": {
+        "character": 47,
+        "line": 4
+      },
+      "start": {
+        "character": 19,
+        "line": 4
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+Panel [] {
+	div class="x"
+	{
+		span
+	}
+}

@@ -1,0 +1,59 @@
+record Job [
+	id: string,
+	title: string,
+	customerName: string,
+	customerEmail?: string,
+	price: number,
+	visits: integer,
+	urgent: boolean,
+	link: URL,
+	status: JobStatus,
+]
+
+state JobStatus {
+	Open,
+	Booked [
+		engineerName: string,
+		slot: string,
+	],
+	Closed [
+		reason?: string,
+	],
+}
+
+record Board [
+	title: string,
+	jobs: [Job],
+	notes?: string,
+]
+
+state Progress {
+	Idle,
+	Running [
+		callId: string,
+	],
+	Failed [
+		message: string,
+	],
+}
+
+state Outcome {
+	Pending,
+	Done [
+		grade: Grade,
+	],
+}
+
+state Grade {
+	Pass,
+	Fail,
+}
+
+record PageView [
+	header: Header,
+]
+
+record Header [
+	progress: Progress,
+	tags?: [string],
+]

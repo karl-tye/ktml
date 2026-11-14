@@ -1,0 +1,8 @@
+record ListView [
+	rows: [Row],
+]
+
+record Row [
+	id: string,
+	status: string,
+]

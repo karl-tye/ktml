@@ -1,0 +1,153 @@
+===
+Record declarations
+===
+
+// Search records
+record SearchItem [
+  id: string,
+  score?: integer,
+  tags: [string],
+  owner: User,
+]
+record Empty []
+record Single [name: string]
+
+---
+
+(source_file
+  (comment)
+  (record_declaration
+    name: (identifier)
+    (field_declaration
+      name: (identifier)
+      type: (type
+        (identifier)))
+    (field_declaration
+      name: (identifier)
+      type: (type
+        (identifier)))
+    (field_declaration
+      name: (identifier)
+      type: (type
+        (collection_type
+          (type
+            (identifier)))))
+    (field_declaration
+      name: (identifier)
+      type: (type
+        (identifier))))
+  (record_declaration
+    name: (identifier))
+  (record_declaration
+    name: (identifier)
+    (field_declaration
+      name: (identifier)
+      type: (type
+        (identifier)))))
+
+===
+Nested collection types with inner whitespace
+===
+
+record Grid [
+  rows: [ [number] ],
+]
+
+---
+
+(source_file
+  (record_declaration
+    name: (identifier)
+    (field_declaration
+      name: (identifier)
+      type: (type
+        (collection_type
+          (type
+            (collection_type
+              (type
+                (identifier)))))))))
+
+===
+Collection and record typed component inputs
+===
+
+List[items: [Item], owner?: User, count: integer = 0] {
+  ul {}
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list
+      (parameter
+        (identifier)
+        (type
+          (collection_type
+            (type
+              (identifier)))))
+      (parameter
+        (identifier)
+        (type
+          (identifier)))
+      (parameter
+        (identifier)
+        (type
+          (identifier))
+        (default_value
+          (number_literal))))
+    (element_body
+      (element
+        (identifier)
+        (element_body)))))
+
+===
+Schema imports with aliases and trailing comma
+===
+
+import { SearchItem, SearchState as State, } from "./search.ktmlschema"
+import {} from "./empty.ktmlschema"
+
+---
+
+(source_file
+  (import_statement
+    (identifier)
+    (import_alias
+      (identifier)
+      (identifier))
+    (string_literal))
+  (import_statement
+    (string_literal)))
+
+===
+Record stays usable as an element name and path part
+===
+
+Card[record: User] {
+  record {
+    "{record.name}"
+  }
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list
+      (parameter
+        (identifier)
+        (type
+          (identifier))))
+    (element_body
+      (element
+        (identifier)
+        (element_body
+          (text
+            (interpolated_string
+              (interpolation
+                (path
+                  (identifier)
+                  (identifier))))))))))

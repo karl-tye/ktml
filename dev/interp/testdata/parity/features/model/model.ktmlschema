@@ -1,0 +1,23 @@
+record Link [
+	label: string,
+	href: URL,
+	trusted: TrustedURL,
+	external: boolean,
+]
+
+record Item [
+	id: integer,
+	slug: string,
+	title: string,
+	note?: string,
+	price: number,
+	links: [Link],
+	tags?: [string],
+]
+
+state Load {
+	Pending,
+	Failed [reason: string, retry?: URL],
+	Ready [items: [Item], total: integer],
+	Archived,
+}

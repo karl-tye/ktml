@@ -1,0 +1,24 @@
+import { ListView, Row } from "./model.ktmlschema"
+import { Badge, Card } from "../ui/ui.ktml"
+
+ListPage [view: ListView] {
+	ul {
+		for row in view.rows key row.id {
+			JobRow row="{row}"
+		}
+	}
+}
+
+JobRow [row: Row] {
+	li {
+		Badge label="{row.status}"
+	}
+}
+
+JobDetail [title: string] {
+	Card title="{title}"
+}
+
+Orphan [] {
+	p "Never routed"
+}

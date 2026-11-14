@@ -1,0 +1,210 @@
+// Host Schema of the shared ui components: form fields, buttons, badges,
+// list chrome, tabs, and banners.
+
+// FieldWithError is a text field that can show a validation message.
+record FieldWithErrorView [
+	hasError: boolean,
+	label: string,
+	inputType: string,
+	name: string,
+	value: string,
+	inputClass: string,
+	error: string,
+]
+
+// SelectWithError is a select that can show a validation message.
+record SelectWithErrorView [
+	hasError: boolean,
+	label: string,
+	name: string,
+	selectClass: string,
+	error: string,
+]
+
+// ChoiceOption is one radio choice and whether it is chosen.
+record ChoiceOptionView [
+	name: string,
+	value: string,
+	label: string,
+	chosen: boolean,
+]
+
+// ActionButton is a button styled by its tone.
+record ActionButtonView [
+	toneClass: string,
+	text: string,
+]
+
+// PrimaryActionButton is the main action of a form.
+record PrimaryActionButtonView [
+	actionButton: ActionButtonView,
+]
+
+// SuccessActionButton confirms something.
+record SuccessActionButtonView [
+	actionButton: ActionButtonView,
+]
+
+// DangerActionButton removes something.
+record DangerActionButtonView [
+	actionButton: ActionButtonView,
+]
+
+// Badge is a short label.
+record BadgeView [
+	badgeClass: string,
+	text: string,
+]
+
+// StatusBadge is a rounded status label.
+record StatusBadgeView [
+	toneClass: string,
+	text: string,
+]
+
+// LockedForm is a form that opens for editing on request.
+record LockedFormView [
+	alpineState: TrustedScript,
+]
+
+// SaveBar confirms and saves the changes of a LockedForm.
+record SaveBarView [
+	visibleWhen: TrustedScript,
+	message: string,
+]
+
+// SaveFooter is SaveBar at the foot of a dialog.
+record SaveFooterView [
+	visibleWhen: TrustedScript,
+	message: string,
+]
+
+// SectionTabs links the sections of a list page.
+record SectionTabsView [
+	hasTabs: boolean,
+	label: string,
+	tabs: [SectionTabsTab],
+	target: string,
+]
+
+// One section tab.
+record SectionTabsTab [
+	key: integer,
+	href: URL,
+	fragmentHref: URL,
+	pushURL: string,
+	class: string,
+	active: boolean,
+	label: string,
+	hasCount: boolean,
+	count: string,
+]
+
+// FilterForm reloads a list as its filters change.
+record FilterFormView [
+	action: URL,
+	target: string,
+]
+
+// MultiSelectFilter filters a list by several values of one field.
+record MultiSelectFilterView [
+	alpineState: TrustedScript,
+	allLabel: string,
+	summary: string,
+	options: [MultiSelectFilterOption],
+	name: string,
+]
+
+// One value of a MultiSelectFilter.
+record MultiSelectFilterOption [
+	key: integer,
+	value: string,
+	checked: boolean,
+	label: string,
+]
+
+// PageNavigation pages through a long list.
+record PageNavigationView [
+	label: string,
+	isEmpty: boolean,
+	first: string,
+	last: string,
+	totalKnown: boolean,
+	total: string,
+	hasPrevious: boolean,
+	previousHref: URL,
+	target: string,
+	hasPageCount: boolean,
+	current: string,
+	pageCount: string,
+	hasNext: boolean,
+	nextHref: URL,
+]
+
+// TableEmptyState fills an empty table.
+record TableEmptyStateView [
+	columns: string,
+	iconClass: string,
+	title: string,
+	hasDescription: boolean,
+	description: string,
+]
+
+// RowDialogAction opens a row's details in the dialog.
+record RowDialogActionView [
+	href: URL,
+	class: string,
+	label: string,
+]
+
+// ListExample puts the list chrome together.
+record ListExampleView [
+	id: string,
+	sectionTabs: SectionTabsView,
+	pageNavigation: PageNavigationView,
+]
+
+// ListStatesExample shows a filtered, empty list.
+record ListStatesExampleView [
+	filterForm: FilterFormView,
+	tableEmptyState: TableEmptyStateView,
+]
+
+// PlusButton opens a form to add something.
+record PlusButtonView [
+	hasText: boolean,
+	text: string,
+]
+
+// Tabs switches between panels in the page.
+record TabsView [
+	single: boolean,
+	several: boolean,
+	alpineState: TrustedScript,
+	tabs: [TabsTab],
+]
+
+// One tab of Tabs.
+record TabsTab [
+	key: string,
+	choose: TrustedScript,
+	activeClass: TrustedScript,
+	label: string,
+]
+
+// A panel of Tabs.
+record TabPanelView [
+	visibleWhen: TrustedScript,
+]
+
+// Banner is a notice across the top of a page.
+record BannerView [
+	visibleWhen: TrustedScript,
+	toneClass: string,
+]
+
+// LazyTab loads its content when shown.
+record LazyTabView [
+	href: URL,
+	text: string,
+]

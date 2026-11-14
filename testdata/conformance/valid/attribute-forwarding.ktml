@@ -1,0 +1,9 @@
+Field [label: string, attrs?: Attributes] {
+	input (type="text" if attrs? { ...attrs })
+}
+
+Form [on: boolean, mine: Attributes] {
+	div class="x" ...mine
+	Field label="a" attrs=(required title="t" if on { disabled } else { ...mine })
+	Field label="b" attrs=()
+}

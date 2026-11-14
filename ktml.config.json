@@ -1,0 +1,18 @@
+{
+  "package_dir": "./ktml",
+  "plugin": {
+    "gohtml": {
+      "path": "./plugins/gohtml.wasm",
+      "outputs": [{"dir": ".", "suffixes": [".html", ".ktml.go"]}]
+    },
+    "alpine": {
+      "path": "./plugins/alpine.wasm",
+      "allow_read": ["."]
+    }
+  },
+  "resolution": {
+    "generate": "gohtml",
+    "format": ["gohtml"],
+    "lsp": ["gohtml", "alpine"]
+  }
+}

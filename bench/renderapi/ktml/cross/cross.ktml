@@ -1,0 +1,23 @@
+import { Box } from "../nested/nested.ktml"
+
+// NestedCross is NestedSame built from another package, so every Box call is
+// a cross-package call through the candidate's public API.
+NestedCross [label: string] {
+	Box depth=1 {
+		Box depth=2 {
+			Box depth=3 {
+				Box depth=4 {
+					Box depth=5 {
+						Box depth=6 {
+							Box depth=7 {
+								Box depth=8 {
+									p class="leaf" "{label}"
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

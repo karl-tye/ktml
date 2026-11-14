@@ -1,0 +1,12 @@
+record Tag [
+	id: integer,
+	label: string,
+]
+
+record Entry [
+	id: string,
+	title: string,
+	score: integer,
+	note?: string,
+	tags: [Tag],
+]

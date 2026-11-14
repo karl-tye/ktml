@@ -1,0 +1,59 @@
+package app
+
+import (
+	"bytes"
+	"context"
+	"net/http/httptest"
+	"testing"
+
+	"example.com/inplace/pages"
+	"example.com/inplace/widgets"
+)
+
+func TestRenders(t *testing.T) {
+	var b bytes.Buffer
+	if err := widgets.Badge("t", 3).Render(context.Background(), &b); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := b.String(), `<span class="badge">t 3</span>`; got != want {
+		t.Errorf("badge: got %s, want %s", got, want)
+	}
+	b.Reset()
+	if err := Home().Content.Render(context.Background(), &b); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := b.String(), `<div class="group"><span class="badge">a 1</span><span class="badge">b 2</span></div>`; got != want {
+		t.Errorf("home: got %s, want %s", got, want)
+	}
+	b.Reset()
+	if err := pages.Home(items).Render(context.Background(), &b); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := b.String(), `<main><span class="badge">items 2</span><ul><li id="a">Alpha</li><li id="b">Beta (done)</li></ul><h3>none</h3><section><h2>Alpha</h2><b>first</b></section></main>`; got != want {
+		t.Errorf("pages: got %s, want %s", got, want)
+	}
+	b.Reset()
+	if err := widgets.Forward("plain", nil).Render(context.Background(), &b); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := b.String(), `<span>plain</span>`; got != want {
+		t.Errorf("forward without icon: got %s, want %s", got, want)
+	}
+	recorder := httptest.NewRecorder()
+	ListHandler(Renderer{})(recorder, httptest.NewRequest("GET", "/", nil))
+	if got, want := recorder.Body.String(), `<ul><li id="a">Alpha</li><li id="b">Beta (done)</li></ul>`; got != want {
+		t.Errorf("list: got %s, want %s", got, want)
+	}
+	recorder = httptest.NewRecorder()
+	BadgeHandler(recorder, httptest.NewRequest("GET", "/", nil))
+	if got, want := recorder.Body.String(), `<span class="badge">count 2</span>`; got != want {
+		t.Errorf("badge handler: got %s, want %s", got, want)
+	}
+	recorder = httptest.NewRecorder()
+	request := httptest.NewRequest("GET", "/", nil)
+	request = request.WithContext(context.WithValue(request.Context(), widgets.UserKey{}, "Sam"))
+	GreetingHandler(recorder, request)
+	if got, want := recorder.Body.String(), `<p>Hello, Sam</p>`; got != want {
+		t.Errorf("greeting: got %s, want %s", got, want)
+	}
+}

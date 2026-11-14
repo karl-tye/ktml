@@ -1,0 +1,53 @@
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": {
+    "changes": {
+      "file://$APP/views/list.ktml": [
+        {
+          "newText": "/vendors/{id}/approval",
+          "range": {
+            "end": {
+              "character": 36,
+              "line": 1
+            },
+            "start": {
+              "character": 15,
+              "line": 1
+            }
+          }
+        }
+      ],
+      "file://$APP/views/vendors.ktml": [
+        {
+          "newText": "/vendors/{vendor.id}/approval",
+          "range": {
+            "end": {
+              "character": 47,
+              "line": 4
+            },
+            "start": {
+              "character": 19,
+              "line": 4
+            }
+          }
+        }
+      ],
+      "file://$APP/web/router.go": [
+        {
+          "newText": "\"/{id}/approval\"",
+          "range": {
+            "end": {
+              "character": 24,
+              "line": 17
+            },
+            "start": {
+              "character": 9,
+              "line": 17
+            }
+          }
+        }
+      ]
+    }
+  }
+}

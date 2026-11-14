@@ -1,0 +1,57 @@
+import { Card, Column, Tag, BoardState } from "./kanban.ktmlschema"
+
+CardView [card: Card] {
+	li class="card" {
+		h3 "{card.title}"
+		ul class="tags" {
+			for tag in card.tags key tag.id {
+				li "{tag.label}"
+			}
+		}
+	}
+}
+
+Columns [columns: [Column]] {
+	for column in columns key column.id {
+		section {
+			h2 "{column.title}"
+			ul {
+				for card in column.cards key card.id {
+					CardView card="{card}"
+				}
+			}
+		}
+	}
+}
+
+Labels [labels: [string]] {
+	for label in labels key label {
+		span "{label}"
+		input name="{label}"
+	}
+	for label in labels key label {}
+}
+
+Board [state: BoardState]
+
+Board [state = Loading] {
+	p "Loading"
+}
+
+Board [state = Ready, columns] {
+	Columns columns="{columns}"
+}
+
+Picker [labels?: [string]]
+
+Picker [labels = Some, value as list] {
+	select {
+		for label in list key label {
+			option value="{label}" "{label}"
+		}
+	}
+}
+
+Picker [labels = None] {
+	p "No labels"
+}

@@ -1,0 +1,24 @@
+import { Item, Child, Row } from "./list.ktmlschema"
+
+FlatList [items: [Item]] {
+	ul class="items" {
+		for item in items key item.id {
+			li class="item" data-count="{item.count}" {
+				span "{item.title}"
+			}
+		}
+	}
+}
+
+NestedList [rows: [Row]] {
+	for row in rows key row.id {
+		section class="row" {
+			h2 "{row.title}"
+			ul {
+				for child in row.children key child.id {
+					li "{child.label}"
+				}
+			}
+		}
+	}
+}

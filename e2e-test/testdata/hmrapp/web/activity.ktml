@@ -1,0 +1,17 @@
+import { Entry } from "./model.ktmlschema"
+
+Activity [entries: [Entry]] {
+	ul id="activity-list" {
+		for entry in entries key entry.id {
+			li "{entry.kind}: {entry.text}"
+		}
+	}
+}
+
+Notice [text: string] {
+	p id="notice-text" "{text}"
+}
+
+Extra [text: string] {
+	p id="extra-text" "{text}"
+}

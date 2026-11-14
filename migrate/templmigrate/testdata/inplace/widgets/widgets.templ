@@ -1,0 +1,84 @@
+package widgets
+
+import "time"
+
+// Badge is a direct template.
+templ Badge(text string, count int) {
+	<span class="badge">{ text } { count }</span>
+}
+
+// List needs a presenter, which calls the unexported helper label.
+templ List(items []Item) {
+	<ul>
+		for _, item := range items {
+			<li id={ item.ID }>{ label(item) }</li>
+		}
+	</ul>
+}
+
+// Panel renders children.
+templ Panel(item Item) {
+	<section><h2>{ label(item) }</h2>{ children... }</section>
+}
+
+// Stamp reads the clock.
+templ Stamp(text string) {
+	<time datetime={ time.Now().UTC().Format("2006") }>{ text }</time>
+}
+
+// Greeting reads the request context.
+templ Greeting(greeting string) {
+	<p>{ greeting }, { ctx.Value(UserKey{}).(string) }</p>
+}
+
+// Group renders every component it is given.
+templ Group(parts ...templ.Component) {
+	<div class="group">
+		for _, part := range parts {
+			@part
+		}
+	</div>
+}
+
+// Pair calls another template of the batch.
+templ Pair() {
+	@Badge("a", 1)
+	@Badge("b", 2)
+}
+
+// Labelled renders its icon only when one is given.
+templ Labelled(text string, icon templ.Component) {
+	<span>
+		if icon != nil {
+			<i>@icon</i>
+		}
+		{ text }
+	</span>
+}
+
+// Forward passes its optional icon on: templ passes nil when it has none.
+templ Forward(text string, icon templ.Component) {
+	@Labelled(text, icon)
+}
+
+// Framed renders its icon without testing it.
+templ Framed(icon templ.Component) {
+	<b>@icon</b>
+}
+
+// PassFramed passes its icon on to a template that never tests it.
+templ PassFramed(icon templ.Component) {
+	@Framed(icon)
+}
+
+// Actions renders its action bar only when it has actions.
+templ Actions(title string, actions ...templ.Component) {
+	<h3>{ title }</h3>
+	if len(actions) > 0 {
+		<div class="actions">
+			for _, action := range actions {
+				@action
+			}
+		</div>
+	}
+}

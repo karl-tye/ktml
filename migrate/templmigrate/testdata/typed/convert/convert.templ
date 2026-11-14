@@ -1,0 +1,102 @@
+package convert
+
+import (
+	"fmt"
+	"strconv"
+
+	"example.com/typed/convert/widgets"
+)
+
+// BoardPage covers paths, conditions, classes, styles, URLs, scripts, loops,
+// calls, content, attribute bags, the clock, and locals.
+templ BoardPage(board Board, open bool) {
+	<main id="board" class={ "board", templ.KV("is-open", open) }>
+		<h1>{ board.Title }</h1>
+		<p class="summary" data-ref={ "board-" + board.Title + "-" + strconv.Itoa(board.Count) }>{ fmt.Sprintf("%d of %s's 100%% items", board.Count, board.Title) }</p>
+		<p class="lead">Owned by <b>{ ownerName(board) }</b> since <i>today</i>.</p>
+		if board.Owner != nil {
+			<span class="owner">{ *board.Owner }</span>
+		} else if len(board.Items) == 0 {
+			<span class="empty">No items</span>
+		} else {
+			<span class="count">{ strconv.Itoa(len(board.Items)) } items</span>
+		}
+		if board.Status == StatusOpen {
+			<a href={ board.Link } hx-get={ "/boards/" + board.Title } class={ "link", templ.KV("bold", open), templ.KV(hiddenClass, !open) }>Open</a>
+		}
+		<a href={ templ.URL("/boards?title=" + board.Title) }>Search</a>
+		<a href={ templ.SafeURL(board.Link) }>Trusted</a>
+		<button hx-post={ "/" + board.Title } hx-delete={ fmt.Sprintf("/boards/%d/items", board.Count) } hx-put={ board.Title }>Act</button>
+		<button type="button" aria-expanded?={ open } aria-hidden?={ !open } aria-pressed={ open } aria-busy?={ true } aria-live?={ false }>Toggle</button>
+		<div x-data={ templ.JSONString(board.Tags) } @click={ fmt.Sprintf("select('%s')", board.Title) } :disabled={ open }></div>
+		<ul>
+			for _, item := range board.Items {
+				<li id={ "item-" + item.ID } class={ "item", templ.KV("done", item.Done) }>
+					{ item.Label }
+					if item.Due != nil {
+						<time>{ item.Due.Format("2 Jan") }</time>
+					}
+					switch item.Phase {
+						case PhaseTodo:
+							<small>todo { item.Label }</small>
+						case PhaseDoing, PhaseDone:
+							<small>started</small>
+					}
+				</li>
+			}
+		</ul>
+		<ol>
+			for _, tag := range board.Tags {
+				<li>{ tag }</li>
+			}
+		</ol>
+		for i := 0; i < board.Count; i++ {
+			<i>{ strconv.Itoa(i) }</i>
+		}
+		{{ summary := Summary(board) }}
+		<footer data-summary={ summary }>{ summary }</footer>
+		<section data-panel="details" style={ templ.KV("display: none", !open) }>Details</section>
+		@widgets.Badge("Items", len(board.Items), open)
+		@widgets.Badge("Fixed", 3, false)
+		@widgets.Badge("Count " + board.Title, 2, false)
+		@widgets.Badge(fmt.Sprintf("%d new", board.Count), 1, true)
+		@widgets.Meter(board.Ratio)
+		@widgets.Card(board.Title, widgets.Badge("New", 1, true), templ.Attributes{"data-kind": "board", "hidden": true, "aria-busy": false, "href": "/boards?id=1"}) {
+			<p>Inside</p>
+		}
+		@widgets.Card("Plain", nil, nil)
+		@widgets.Toolbar(widgets.Badge("Menu", 0, false), widgets.Badge("A", 1, false), widgets.Badge("B", 2, false))
+		@widgets.Stamp("Now")
+		switch board.Status {
+			case StatusOpen:
+				<em>open</em>
+			default:
+				<em>other</em>
+		}
+		switch board.Title {
+			case "Empty":
+				<em>empty board</em>
+			default:
+				<em>{ board.Title }</em>
+		}
+		@itemCount(board.Items)
+		@Card("Local")
+		<span class="user">{ fmt.Sprint(ctx.Value(UserKey{})) }</span>
+	</main>
+}
+
+// Card has the name of a widgets template that BoardPage also calls.
+templ Card(title string) {
+	<article>{ title }</article>
+}
+
+templ itemCount(items []Item) {
+	<span class="total">{ strconv.Itoa(len(items)) }</span>
+}
+
+func ownerName(board Board) string {
+	if board.Owner == nil {
+		return "nobody"
+	}
+	return *board.Owner
+}

@@ -1,0 +1,82 @@
+==================
+Conditional attribute groups
+==================
+
+Page [] {
+  a (
+    href="/x"
+    if current { aria-current="page" #now } else if note? { title="{note}" } else { data-off }
+    if:x="1"
+    if="2"
+  ) "x"
+  option (value="6" if !six { selected }) "6"
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list)
+    (element_body
+      (element
+        (identifier)
+        (attribute_group
+          (attribute
+            (attribute_name)
+            (attribute_value
+              (string_literal)))
+          (attribute_condition
+            (path_condition
+              (path
+                (identifier)))
+            (attribute_block
+              (attribute
+                (attribute_name)
+                (attribute_value
+                  (string_literal)))
+              (attribute
+                (element_id
+                  (identifier))))
+            (attribute_condition
+              (presence_condition
+                (path
+                  (identifier)))
+              (attribute_block
+                (attribute
+                  (attribute_name)
+                  (attribute_value
+                    (interpolated_string
+                      (interpolation
+                        (path
+                          (identifier)))))))
+              (attribute_block
+                (attribute
+                  (attribute_name)))))
+          (attribute
+            (attribute_name)
+            (attribute_value
+              (string_literal)))
+          (attribute
+            (attribute_name)
+            (attribute_value
+              (string_literal))))
+        (text
+          (string_literal)))
+      (element
+        (identifier)
+        (attribute_group
+          (attribute
+            (attribute_name)
+            (attribute_value
+              (string_literal)))
+          (attribute_condition
+            (not_condition
+              (path_condition
+                (path
+                  (identifier))))
+            (attribute_block
+              (attribute
+                (attribute_name)))))
+        (text
+          (string_literal))))))

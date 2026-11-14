@@ -1,0 +1,34 @@
+package locals
+
+// Forms assigns locals inside if, else, for, and switch blocks, the shape
+// of a form that prefills only the submitted level.
+templ Forms(levels []string, chosen string, mode int) {
+	<h2>Levels</h2>
+	for _, level := range levels {
+		{{ picked := "no" }}
+		if chosen == level {
+			{{ picked = "yes" }}
+		}
+		<form><b>{ level }</b> <i>{ picked }</i></form>
+		{{ note := "" }}
+		if chosen == "" {
+			{{ note = "none" }}
+		} else {
+			{{ note = "some" }}
+		}
+		<span>{ note }</span> <em>after</em>
+	}
+	{{ label := "" }}
+	switch mode {
+		case 1:
+			{{ label = "one" }}
+		default:
+			{{ label = "many" }}
+	}
+	{{ count := 0 }}
+	for range levels {
+		{{ count++ }}
+	}
+	<p>{ label } <b>kept</b></p>
+	<p>{ count }</p>
+}

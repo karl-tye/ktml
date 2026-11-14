@@ -1,0 +1,41 @@
+# Binaries
+/ktml
+/cmd/ktml/ktml
+!/ktml/
+*.exe
+*.test
+coverage.out
+coverage.html
+
+# Build cache & KTML state
+.ktml/
+*.log
+
+# Generated KTML outputs (production Go renderers)
+*.ktml.go
+e2e-test/*.html
+e2e-test/*.ktml.go
+e2e-test/gohtml.wasm
+
+# WASM plugins (built from cmd/plugins/* via `GOOS=wasip1 go build`)
+plugins/*.wasm
+
+# Opencode runtime
+.opencode/.project-runtime/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Go workspace
+vendor/
+
+# Neovim parser built by :KtmlBuildParser
+editors/nvim/parser/
+
+# Pinned tools installed by scripts/
+.tools/

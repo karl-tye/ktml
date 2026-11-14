@@ -1,0 +1,110 @@
+import { Member, Address, Panel } from "./ui.ktmlschema"
+
+Modal [title: string, children: content, actions?: content] {
+	section class="modal" {
+		h2 "{title}"
+		children
+		if actions? {
+			footer class="modal-footer" {
+				actions
+			}
+		}
+	}
+}
+
+Layout [] {
+	main {
+		children
+	}
+}
+
+Inner [] {
+	em {
+		children
+	}
+}
+
+Page [] {
+	Layout {
+		Inner
+		hr
+		Inner {
+			"text"
+		}
+	}
+}
+
+MemberCard [member: Member, note?: string, compact: boolean = false] {
+	article {
+		h3 "{member.name}"
+		if member.admin && !compact {
+			span class="badge" "Admin"
+		} else if note? {
+			p "{note}"
+		} else {
+			p "Member"
+		}
+		if member.address? && member.address.verified {
+			p "{member.address.city}"
+			if member.address.note? {
+				small "{member.address.note}"
+			}
+		}
+		if !member.nickname? {
+			p "No nickname"
+		} else {
+			p "aka {member.nickname}"
+		}
+		if member.tags? {
+			ul {
+				for tag in member.tags key tag {
+					li "{tag}"
+				}
+			}
+		}
+		if member.flag? && member.flag {
+			i "flagged"
+		}
+		div id="a"
+		div id="b"
+	}
+}
+
+Roster [members: [Member], heading?: content] {
+	Modal title="Roster" {
+		if heading? {
+			heading
+		}
+		for member in members key member.id {
+			MemberCard member="{member}"
+		}
+		slot actions {
+			button type="button" hx-push-url="true" "Close"
+		}
+	}
+}
+
+StatusPanel [panel: Panel, children?: content]
+
+StatusPanel [panel = Open] {
+	div class="open" {
+		children
+	}
+}
+
+StatusPanel [panel = Closed, reason] {
+	p "{reason}"
+}
+
+Nested [member: Member] {
+	Modal title="Outer" {
+		Modal title="Inner" {
+			p "{member.name}"
+			slot actions {
+				if member.nickname? {
+					span "{member.nickname}"
+				}
+			}
+		}
+	}
+}

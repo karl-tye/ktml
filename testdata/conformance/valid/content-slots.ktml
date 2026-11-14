@@ -1,0 +1,20 @@
+Modal [title: string, children: content, footer?: content] {
+	section {
+		children
+		footer
+	}
+}
+
+Page [children?: content] {
+	Modal title="Pay" {
+		p "Choose a method."
+		slot footer {
+			button type="submit" "Pay"
+			children
+		}
+	}
+	Modal title="Empty" {
+		slot footer {}
+	}
+	slot name="html"
+}

@@ -1,0 +1,344 @@
+import { StaffPayment, PublicPayment, Money, OrderSummary } from "../billing/payment.ktmlschema"
+
+// Modal chrome shared by every staff back-office panel.
+ModalHeader [children: content] {
+	div class="p-4 border-b border-surface0 flex justify-between items-center gap-2 bg-surface0/30 shrink-0" {
+		div class="flex min-w-0 flex-1 items-center gap-3" {
+			children
+		}
+		div class="flex shrink-0 items-center gap-2" {
+			button (
+				type="button"
+				aria-label="Close dialog"
+				onclick="this.closest('dialog').close()"
+				class="flex size-11 items-center justify-center rounded-lg text-subtext0 hover:bg-surface1 sm:size-9"
+			) {
+				i class="fas fa-times"
+			}
+		}
+	}
+}
+
+ModalFooter [children: content] {
+	div class="p-4 border-t border-surface0 flex justify-between items-center bg-surface0/30 shrink-0" {
+		children
+	}
+}
+
+// The shared head and body of the shop's public pages. Pages add scripts through
+// the optional slot.
+PublicShell [title: string, children: content, scripts?: content] {
+	html lang="en" {
+		head {
+			meta charset="UTF-8"
+			meta name="viewport" content="width=device-width, initial-scale=1.0"
+			link rel="stylesheet" href="/static/css/main.css"
+			scripts
+			title "{title}"
+		}
+		body class="min-h-screen bg-mantle text-text px-4 py-8 sm:py-14" {
+			children
+		}
+	}
+}
+
+AmountDue [amount: Money] {
+	p class="text-3xl font-bold text-green" "{amount.display}"
+}
+
+StaffPaymentPanel [payment: StaffPayment, orderLink: URL]
+
+StaffPaymentPanel [payment = NotDue] {
+	div class="bg-base rounded-xl shadow-xl w-full flex flex-col" {
+		ModalHeader {
+			h2 class="text-xl font-bold text-text" "Take Payment"
+		}
+		div class="border border-green/40 bg-green/10 p-4 text-sm text-text" "No upfront payment is due."
+		ModalFooter {
+			button (
+				type="button"
+				hx-get="{orderLink}"
+				hx-target="#global-modal-content"
+				hx-swap="innerHTML"
+				class="px-4 py-2 bg-surface0 text-text rounded-lg"
+			) "Back"
+		}
+	}
+}
+
+StaffPaymentPanel [payment = Payable, amount, cardAction, checkoutLink] {
+	form (
+		id="phone-card-form"
+		action="{cardAction}"
+		method="post"
+		data-target="#global-modal-content"
+		class="bg-base rounded-xl shadow-xl w-full flex flex-col"
+	) {
+		ModalHeader {
+			div {
+				h2 class="text-xl font-bold text-text" "Take Payment"
+			}
+		}
+		div class="flex-1 overflow-y-auto p-6 space-y-6" {
+			AmountDue amount="{amount}"
+			nav aria-label="Payment method" class="grid grid-cols-2 gap-3" {
+				button type="button" class="border border-blue bg-blue/10 p-3" "Card by phone"
+				a (
+					href="{checkoutLink}"
+					hx-get="{checkoutLink}"
+					hx-target="#global-modal-content"
+					hx-swap="innerHTML"
+					class="border border-surface1 p-3"
+				) "Email checkout link"
+			}
+			div id="phone-card-pan" class="h-10 border border-surface1"
+			div id="phone-card-expiry" class="h-10 border border-surface1"
+			div id="phone-card-cvv" class="h-10 border border-surface1"
+			p id="phone-payment-error" role="alert" class="hidden text-sm text-red"
+		}
+		ModalFooter {
+			div class="flex justify-end gap-3 w-full" {
+				button type="button" hx-get="{orderLink}" hx-target="#global-modal-content" hx-swap="innerHTML" "Back"
+				button type="submit" class="px-5 py-2 bg-green text-crust rounded-lg" "Take {amount.display}"
+			}
+		}
+	}
+}
+
+StaffPaymentPanel [payment = Confirming, paymentId, label, title, detail, statusLink] {
+	form (
+		hx-get="{statusLink}"
+		hx-trigger="every 5s"
+		hx-target="#global-modal-content"
+		hx-swap="innerHTML"
+		hx-sync="this:drop"
+		class="bg-base rounded-xl shadow-xl w-full flex flex-col"
+	) {
+		input type="hidden" name="paymentId" value="{paymentId}"
+		ModalHeader {
+			div {
+				p class="text-xs font-semibold uppercase tracking-widest text-yellow" "{label}"
+				h2 class="mt-1 text-xl font-bold text-text" "{title}"
+			}
+		}
+		p class="mt-2 text-sm leading-6 text-subtext1" "{detail}"
+		ol class="mt-10 grid gap-3 sm:grid-cols-3" aria-label="Payment progress" {
+			li class="border border-green/30 bg-green/5 p-4" "Payment submitted"
+			li class="border border-yellow/40 bg-yellow/10 p-4" "Tessera Pay confirmation"
+			li class="border border-surface1 p-4" "Shipment creation"
+		}
+		ModalFooter {
+			button type="button" hx-get="{orderLink}" hx-target="#global-modal-content" hx-swap="innerHTML" "Back to order"
+		}
+	}
+}
+
+StaffPaymentPanel [payment = Retryable, label, title, detail, actionLabel, retryLink] {
+	div class="bg-base rounded-xl shadow-xl w-full flex flex-col" {
+		ModalHeader {
+			p class="text-xs font-semibold uppercase tracking-widest text-red" "{label}"
+		}
+		p class="mt-5 text-lg font-semibold text-text" "{title}"
+		p class="mt-2 text-sm leading-6 text-subtext1" "{detail}"
+		ModalFooter {
+			button type="button" hx-get="{orderLink}" hx-target="#global-modal-content" hx-swap="innerHTML" "Back to order"
+			button (
+				type="button"
+				hx-get="{retryLink}"
+				hx-target="#global-modal-content"
+				hx-swap="innerHTML"
+				class="px-5 py-2 bg-blue text-crust rounded-lg"
+			) "{actionLabel}"
+		}
+	}
+}
+
+StaffPaymentPanel [payment = Blocked, label, title, detail] {
+	div class="bg-base rounded-xl shadow-xl w-full flex flex-col" {
+		ModalHeader {
+			p class="text-xs font-semibold uppercase tracking-widest text-red" "{label}"
+		}
+		p class="mt-5 text-lg font-semibold text-text" "{title}"
+		p class="mt-2 text-sm leading-6 text-subtext1" "{detail}"
+		ModalFooter {
+			button type="button" hx-get="{orderLink}" hx-target="#global-modal-content" hx-swap="innerHTML" "Back to order"
+		}
+	}
+}
+
+StaffPaymentPanel [payment = Confirmed, amount, shipmentReference, shipmentLink] {
+	div class="bg-base rounded-xl shadow-xl w-full flex flex-col" data-confetti="true" {
+		ModalHeader {
+			div {
+				p class="text-xs font-semibold uppercase tracking-widest text-green" "Payment confirmed"
+				h2 class="mt-1 text-xl font-bold text-text" "Shipment {shipmentReference} created"
+			}
+		}
+		AmountDue amount="{amount}"
+		ModalFooter {
+			a href="{shipmentLink}" hx-get="{shipmentLink}" hx-push-url="true" class="px-5 py-2 bg-blue text-crust rounded-lg" "Open Shipment"
+		}
+	}
+}
+
+PublicPaymentPage [payment: PublicPayment]
+
+PublicPaymentPage [payment = Confirming, reference, statusLink] {
+	PublicShell title="{reference} payment" {
+		main id="payment-pending" data-status-url="{statusLink}" class="mx-auto max-w-xl border border-surface0 bg-base p-8" {
+			p class="text-xs font-semibold uppercase text-yellow" "Confirmation pending"
+			h1 class="mt-3 text-3xl font-semibold" "We are confirming your payment"
+			p class="mt-4 text-subtext0" "Your order reference is {reference}. Do not submit another payment."
+		}
+	}
+}
+
+PublicPaymentPage [payment = DeviceData, action, bin, jwt] {
+	PublicShell title="Bank security check" {
+		main id="tessera-device-data" class="mx-auto max-w-xl border border-surface0 bg-base p-8" {
+			iframe name="tessera-device-data-frame" class="hidden" title="Bank security check"
+			form method="post" action="{action}" target="tessera-device-data-frame" {
+				input type="hidden" name="Bin" value="{bin}"
+				input type="hidden" name="JWT" value="{jwt}"
+			}
+		}
+	}
+}
+
+PublicPaymentPage [payment = Challenge, action, jwt] {
+	PublicShell title="Bank verification" {
+		main id="tessera-challenge" class="mx-auto max-w-xl border border-surface0 bg-base p-8" {
+			iframe name="tessera-challenge-frame" class="h-[500px] w-full" title="Bank verification"
+			form method="post" action="{action}" target="tessera-challenge-frame" {
+				input type="hidden" name="JWT" value="{jwt}"
+			}
+		}
+	}
+}
+
+PublicPaymentPage [payment = NotCompleted, reference, returnLink] {
+	PublicShell title="{reference} payment" {
+		main class="mx-auto max-w-xl border border-surface0 bg-base p-8" {
+			p class="text-xs font-semibold uppercase text-red" "Payment not completed"
+			h1 class="mt-3 text-3xl font-semibold" "Your bank did not confirm this payment"
+			p class="mt-4 text-subtext0" "No order has been placed for basket {reference}."
+			a href="{returnLink}" class="mt-6 inline-flex rounded-lg bg-blue px-5 py-3 font-semibold text-crust" "Return to secure payment"
+		}
+	}
+}
+
+PublicPaymentPage [payment = Confirmed, reference] {
+	PublicShell title="{reference} confirmed" {
+		main class="mx-auto max-w-xl border border-surface0 bg-base p-8" {
+			p class="text-xs font-semibold uppercase text-green" "Order confirmed"
+			h1 class="mt-3 text-3xl font-semibold" "Your first box is being packed"
+			p class="mt-4 text-subtext0" "Reference {reference}"
+		}
+	}
+}
+
+// CheckoutPage is the public subscription checkout. Its four orthogonal
+// conditions are booleans and one optional that Go derives; the template only
+// combines them.
+CheckoutPage [order: OrderSummary, testMode: boolean = true] {
+	PublicShell title="{order.reference} checkout" {
+		slot scripts {
+			if order.cardCheckout {
+				script src="https://js.tesserapay.example/checkout/v2/checkout.js"
+				script src="/static/js/tessera-checkout.js" defer
+			}
+		}
+		main class="mx-auto w-full max-w-2xl border border-surface0 bg-base" {
+			header class="border-b border-surface0 p-6 sm:p-8" {
+				p class="text-xs font-semibold uppercase tracking-[0.2em] text-blue" "Fernhill Teas"
+				h1 class="mt-3 text-3xl font-semibold" "Your tea subscription"
+				p class="mt-2 text-sm text-subtext0" "{order.summary}"
+			}
+			section class="grid gap-px bg-surface0 sm:grid-cols-2" {
+				div class="bg-base p-6" {
+					p class="text-xs uppercase tracking-wider text-subtext0" "Due today"
+					AmountDue amount="{order.dueNow}"
+				}
+				div class="bg-base p-6" {
+					p class="text-xs uppercase tracking-wider text-subtext0" "Subscription"
+					p class="mt-2 font-semibold" "First box {order.firstBox.display}"
+					p class="mt-1 text-sm text-subtext0" "Then {order.monthly.display} per month, charged when each box ships."
+				}
+			}
+			section class="p-6 sm:p-8" {
+				if order.membershipRequired {
+					aside class="mb-6 border border-blue/40 bg-blue/10 p-4 text-sm" {
+						h2 class="font-semibold" "Membership required"
+						p class="mt-1" "Free delivery on this subscription needs a confirmed tea club membership."
+					}
+				}
+				TestTerms testMode="{testMode}"
+				if order.membershipRequired && order.acceptance? {
+					div role="status" {
+						h2 class="text-xl font-semibold" "Terms accepted — waiting for membership confirmation"
+						p class="mt-3 text-subtext0" "Accepted {order.acceptance.acceptedAt}. No order has been placed yet."
+					}
+				} else if !order.cardCheckout {
+					form action="/checkout/accept" method="post" class="space-y-5" {
+						input type="hidden" name="token" value="{order.token}"
+						label class="flex items-start gap-3 text-sm" {
+							input type="checkbox" name="terms" value="accepted" required class="mt-1 h-4 w-4"
+							span "I accept order revision {order.version}, its stated conditions and the test terms shown above."
+						}
+						button type="submit" class="w-full rounded-lg bg-blue px-5 py-3 font-semibold text-crust" "Accept order and terms"
+					}
+				} else {
+					form (
+						id="tessera-card-form"
+						data-checkout-id="{order.checkoutId}"
+						action="/checkout/pay"
+						method="post"
+						class="space-y-5"
+					) {
+						input type="hidden" name="token" value="{order.token}"
+						input type="hidden" name="session" value=""
+						div id="card-pan" class="mt-2 h-12 rounded-lg border border-surface1 bg-mantle px-3"
+						div id="card-expiry" class="mt-2 h-12 rounded-lg border border-surface1 bg-mantle px-3"
+						div id="card-cvv" class="mt-2 h-12 rounded-lg border border-surface1 bg-mantle px-3"
+						label class="flex items-start gap-3 text-sm" {
+							input type="checkbox" name="terms" value="accepted" required class="mt-1 h-4 w-4"
+							span "I accept order revision {order.version} and the test terms shown above."
+						}
+						p id="payment-error" role="alert" class="hidden text-sm text-red"
+						button type="submit" class="w-full rounded-lg bg-blue px-5 py-3 font-semibold text-crust" "Pay securely with Tessera Pay"
+					}
+				}
+			}
+		}
+	}
+}
+
+PaymentBadge [payment: StaffPayment] default {
+	span class="rounded-full bg-yellow/10 px-2 text-yellow" "In progress"
+}
+
+PaymentBadge [payment = Confirmed] {
+	span class="rounded-full bg-green/10 px-2 text-green" "Paid"
+}
+
+PaymentBadge [payment = Blocked] {
+	span class="rounded-full bg-red/10 px-2 text-red" "Blocked"
+}
+
+TestTerms [testMode: boolean = false]
+
+TestTerms [testMode = true] {
+	aside class="border border-yellow/40 bg-yellow/10 p-4 text-sm" "Test terms"
+}
+
+TestTerms [testMode = false] {
+}
+
+PaymentNote [note?: string]
+
+PaymentNote [note = Some, value as text] {
+	p class="mt-2 text-xs text-subtext0" "{text}"
+}
+
+PaymentNote [note = None] {
+}

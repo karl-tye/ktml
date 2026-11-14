@@ -1,0 +1,29 @@
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": {
+    "isIncomplete": false,
+    "items": [
+      {
+        "detail": "POST vendors.Approve",
+        "filterText": "/vendors/{id}/approve",
+        "insertTextFormat": 2,
+        "kind": 12,
+        "label": "/vendors/{id}/approve",
+        "textEdit": {
+          "newText": "/vendors/${1:{id\\}}/approve",
+          "range": {
+            "end": {
+              "character": 21,
+              "line": 1
+            },
+            "start": {
+              "character": 17,
+              "line": 1
+            }
+          }
+        }
+      }
+    ]
+  }
+}

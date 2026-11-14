@@ -1,0 +1,37 @@
+// Stories for the analysis pipeline: one per Presentation State Variant.
+import { Pipeline } from "./components.ktml"
+
+fixture runningLink: TrustedURL = "/call-audits/call-42"
+
+story Pipeline.Running [
+	progress = Running [callId = "call-42"],
+	stages = [recording = Done, transcription = Done, scoring = Active, complete = Waiting],
+]
+
+story Pipeline.NotRequested [
+	progress = NotRequested,
+	stages = [recording = Waiting, transcription = Waiting, scoring = Waiting, complete = Waiting],
+]
+
+story Pipeline.Failed [
+	progress = Failed [message = "Scoring timed out after 3 attempts"],
+	stages = [recording = Done, transcription = Done, scoring = Waiting, complete = Waiting],
+]
+
+story Pipeline.Complete [
+	progress = Complete [
+		assessment = [
+			hasResults = true,
+			percentage = 82,
+			passed = [toneClass = "text-green", count = "9", outcome = "PASS"],
+			failed = [toneClass = "text-red", count = "2", outcome = "FAIL"],
+			unscored = [toneClass = "text-subtext0", count = "1", outcome = "UNSCORED"],
+			mustPassFailed = false,
+			hasCoaching = true,
+			coaching = "Read the order number back before checking stock.",
+			summary = "",
+		],
+		interactive = [results = [], turns = []],
+	],
+	stages = [recording = Done, transcription = Done, scoring = Done, complete = Done],
+]

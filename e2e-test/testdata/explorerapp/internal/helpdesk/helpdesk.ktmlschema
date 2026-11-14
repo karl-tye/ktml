@@ -1,0 +1,265 @@
+// Host Schema of the helpdesk call audits: the bookshop's customer calls
+// are recorded, transcribed, and scored against its call standards.
+import { PageNavigationView, PlusButtonView } from "../ui/ui.ktmlschema"
+
+// AuditPage lists the answered calls that can be audited.
+record AuditPageView [
+	canManageStandards: boolean,
+	callsOnPage: string,
+	callList: CallListView,
+]
+
+// CallList is a page of answered calls.
+record CallListView [
+	noCalls: boolean,
+	calls: [CallListCall],
+	pageNavigation: PageNavigationView,
+]
+
+// A call in the list.
+record CallListCall [
+	key: string,
+	callRow: CallRowView,
+]
+
+// CallRow is one answered call.
+record CallRowView [
+	callID: string,
+	answeredOn: string,
+	answeredAt: string,
+	answeredBy: string,
+	customerReference: string,
+	duration: string,
+	analysis: RowAnalysis,
+]
+
+// A call's analysis request, as its row shows it.
+state RowAnalysis {
+	NotRequested [
+		callId: string,
+	],
+	Requested [
+		requestedBy: string,
+		link: URL,
+	],
+}
+
+// DetailPage is one call and its analysis.
+record DetailPageView [
+	answeredBy: string,
+	answeredOn: string,
+	duration: string,
+	customerReference: string,
+	callID: string,
+	pipeline: PipelineView,
+]
+
+// Pipeline is the analysis of one call.
+record PipelineView [
+	progress: AnalysisProgress,
+	stages: PipelineStages,
+]
+
+// The analysis progress of one call. Each Variant carries only what its
+// shape renders: only a running analysis polls, only a complete one has
+// results, and only a failed one has an error.
+state AnalysisProgress {
+	NotRequested,
+	Running [
+		callId: string,
+	],
+	Complete [
+		assessment: AssessmentViewView,
+		interactive: InteractiveReviewView,
+	],
+	Failed [
+		message: string,
+	],
+}
+
+// The status of each of the four pipeline stages.
+record PipelineStages [
+	recording: StageStatus,
+	transcription: StageStatus,
+	scoring: StageStatus,
+	complete: StageStatus,
+]
+
+state StageStatus {
+	Waiting,
+	Active,
+	Done,
+}
+
+// InteractiveReview links each standard's result to the transcript.
+record InteractiveReviewView [
+	results: [InteractiveReviewResult],
+	turns: [InteractiveReviewTurn],
+]
+
+// A standard's result.
+record InteractiveReviewResult [
+	key: string,
+	scored: boolean,
+	criterionResultView: CriterionResultViewView,
+]
+
+// A turn of the transcript.
+record InteractiveReviewTurn [
+	key: integer,
+	transcriptTurnView: TranscriptTurnViewView,
+]
+
+// AssessmentView is the call's overall mark.
+record AssessmentViewView [
+	hasResults: boolean,
+	percentage: integer,
+	passed: OutcomeCountView,
+	failed: OutcomeCountView,
+	unscored: OutcomeCountView,
+	mustPassFailed: boolean,
+	hasCoaching: boolean,
+	coaching: string,
+	summary: string,
+]
+
+// OutcomeCount is how many standards had one outcome.
+record OutcomeCountView [
+	toneClass: string,
+	count: string,
+	outcome: string,
+]
+
+// CriterionResultView is one standard's outcome and its evidence.
+record CriterionResultViewView [
+	criterion: JSONValue,
+	evidence?: EvidenceRange,
+	standardID: string,
+	mustPass: boolean,
+	outcomeClass: string,
+	outcome: string,
+	hasTimestamp: boolean,
+	timestamp: string,
+	note: string,
+]
+
+// The transcript range a standard's evidence cites, in seconds.
+record EvidenceRange [
+	start: JSONValue,
+	end: JSONValue,
+]
+
+// TranscriptTurnView is one speaker's turn.
+record TranscriptTurnViewView [
+	startSeconds: string,
+	endSeconds: string,
+	start: JSONValue,
+	end: JSONValue,
+	even: boolean,
+	time: string,
+	hasSpeaker: boolean,
+	speaker: string,
+	text: string,
+]
+
+// StandardsPage lists the call standards and opens the drafting dialog.
+record StandardsPageView [
+	standardCount: integer,
+	plusButton: PlusButtonView,
+	draftingWorkspace: DraftingWorkspaceView,
+	hasError: boolean,
+	error: string,
+	noStandards: boolean,
+	standards: [StandardsPageStandard],
+]
+
+// A standard in the list.
+record StandardsPageStandard [
+	key: string,
+	standardCard: StandardCardView,
+]
+
+// DraftingWorkspace drafts a new standard with a writing assistant.
+record DraftingWorkspaceView [
+	noNotes: boolean,
+	notes: [DraftingWorkspaceNote],
+	draftNotes: DraftNotesView,
+	hasError: boolean,
+	error: string,
+	draftID: string,
+	mustPassInput: MustPassInputView,
+	outcomeWording: OutcomeWordingView,
+	checkInputs: CheckInputsView,
+	checked: boolean,
+	checkClass: string,
+	checkStatus: string,
+	checkSummary: string,
+	canOverride: boolean,
+	canSave: boolean,
+]
+
+// A note in the drafting conversation.
+record DraftingWorkspaceNote [
+	key: integer,
+	noteBubble: NoteBubbleView,
+]
+
+// NoteBubble is one note of the drafting conversation.
+record NoteBubbleView [
+	class: string,
+	author: string,
+	text: string,
+]
+
+// DraftNotes carries the conversation so far through the form.
+record DraftNotesView [
+	notes: [DraftNotesNote],
+]
+
+// A note carried through the form.
+record DraftNotesNote [
+	key: integer,
+	author: string,
+	text: string,
+]
+
+// CheckInputs carries the assistant's check of the draft through the form.
+record CheckInputsView [
+	approved: string,
+	summary: string,
+	checker: string,
+	checkerVersion: string,
+	draftDigest: string,
+	signature: string,
+	reasons: [CheckInputsReason],
+]
+
+// A reason the check gave.
+record CheckInputsReason [
+	key: string,
+	code: string,
+]
+
+// StandardCard edits one standard in place.
+record StandardCardView [
+	standardID: string,
+	archived: boolean,
+	class: string,
+	mustPass: boolean,
+	hasError: boolean,
+	error: string,
+	mustPassInput: MustPassInputView,
+	outcomeWording: OutcomeWordingView,
+]
+
+// MustPassInput marks a standard whose failure fails the whole call.
+record MustPassInputView [
+	checked: boolean,
+]
+
+// OutcomeWording says what counts as each outcome.
+record OutcomeWordingView [
+	pass: string,
+	fail: string,
+	unscored: string,
+]

@@ -1,0 +1,17 @@
+package pages
+
+import "example.com/inplace/widgets"
+
+// Home is not converted: it calls converted widgets through their bridges.
+templ Home(items []widgets.Item) {
+	<main>
+		@widgets.BadgeTempl("items", len(items))
+		@widgets.ListTempl(items)
+		@widgets.ActionsTempl("none")
+		if len(items) > 0 {
+			@widgets.PanelTempl(items[0]) {
+				<b>first</b>
+			}
+		}
+	</main>
+}

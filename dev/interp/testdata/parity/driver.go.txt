@@ -1,0 +1,174 @@
+package PACKAGE
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"sort"
+	"strings"
+	"testing"
+
+	"github.com/karl-tye/ktml"
+	"github.com/karl-tye/ktml/dev"
+	"github.com/karl-tye/ktml/dev/interp"
+)
+
+// This file is written by the interpreter parity harness
+// (dev/interp/parity_test.go). It renders every scenario through the
+// generated Go and through the interpreter and compares exact bytes, the
+// number of writes, and the error, including after every possible write
+// failure and cancellation point.
+
+type ktmlParityScenario struct {
+	component string
+	name      string
+	value     ktml.Component
+}
+
+func ktmlParityContent(label string) ktml.Component {
+	return ktml.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		_, err := io.WriteString(w, "<em>"+label+"</em>")
+		return err
+	})
+}
+
+var errKTMLParityWrite = errors.New("injected write failure")
+
+type ktmlParityWriter struct {
+	output   bytes.Buffer
+	writes   int
+	failAt   int
+	cancelAt int
+	cancel   context.CancelFunc
+}
+
+func (w *ktmlParityWriter) Write(p []byte) (int, error) { return w.write(string(p)) }
+
+func (w *ktmlParityWriter) WriteString(s string) (int, error) { return w.write(s) }
+
+func (w *ktmlParityWriter) write(s string) (int, error) {
+	w.writes++
+	if w.writes == w.failAt {
+		return 0, errKTMLParityWrite
+	}
+	w.output.WriteString(s)
+	if w.writes == w.cancelAt {
+		w.cancel()
+	}
+	return len(s), nil
+}
+
+// ktmlParityDelegate is the delegation hook of the ktmldev public Render
+// (ADR-0004) rendering through the interpreter program.
+type ktmlParityDelegate struct{ program *interp.Program }
+
+func (d ktmlParityDelegate) RenderComponent(ctx context.Context, w io.Writer, component ktml.Component, generated func(context.Context, io.Writer) error) error {
+	return d.program.Render(ctx, w, component)
+}
+
+// ktmlParityMode is one way of entering a render: the root scope it starts
+// in, and whether generated public Renders delegate to the interpreter.
+type ktmlParityMode struct {
+	name     string
+	scope    string
+	delegate bool
+}
+
+func ktmlParityModes() []ktmlParityMode {
+	modes := []ktmlParityMode{{name: "untracked root"}}
+	if ktmlParityDevelopment {
+		modes = append(modes,
+			ktmlParityMode{name: "registry root", scope: "@1"},
+			ktmlParityMode{name: "delegated registry root", scope: "@1", delegate: true})
+	}
+	return modes
+}
+
+func ktmlParityRender(render func(context.Context, io.Writer) error, scope string, failAt, cancelAt int, canceled bool) (string, int, string) {
+	ctx, cancel := context.WithCancel(context.Background())
+	if scope != "" {
+		ctx = dev.WithScope(ctx, scope)
+	}
+	defer cancel()
+	if canceled {
+		cancel()
+	}
+	w := &ktmlParityWriter{failAt: failAt, cancelAt: cancelAt, cancel: cancel}
+	err := render(ctx, w)
+	outcome, kind := "ok", "ok"
+	if err != nil {
+		kind = "error"
+		var typed *ktml.RenderError
+		if errors.As(err, &typed) {
+			kind = strings.ReplaceAll(fmt.Sprintf("%s(partial=%v)", typed.Kind, typed.Partial), " ", "-")
+			outcome = fmt.Sprintf("RenderError kind=%s component=%s input=%s key=%s partial=%v err=%v write=%v canceled=%v",
+				typed.Kind, typed.Component, typed.Input, typed.Key, typed.Partial, typed.Err,
+				errors.Is(err, errKTMLParityWrite), errors.Is(err, context.Canceled))
+		} else {
+			outcome = "error " + err.Error()
+		}
+	}
+	return fmt.Sprintf("%s\nwrites=%d\n%s", outcome, w.writes, w.output.String()), w.writes, kind
+}
+
+func TestKTMLParity(t *testing.T) {
+	program, err := interp.Load(ktmlParityRoot, interp.Options{Development: ktmlParityDevelopment})
+	if err != nil {
+		t.Fatalf("interp.Load() error = %v", err)
+	}
+	comparisons := 0
+	rendered := make(map[string]bool)
+	outcomes := make(map[string]int)
+	scenarios := ktmlParityScenarios()
+	for _, mode := range ktmlParityModes() {
+		for _, scenario := range scenarios {
+			t.Run(mode.name+"/"+scenario.component+"/"+scenario.name, func(t *testing.T) {
+				generated := func(ctx context.Context, w io.Writer) error { return scenario.value.Render(ctx, w) }
+				interpreted := func(ctx context.Context, w io.Writer) error { return program.Render(ctx, w, scenario.value) }
+				compare := func(label string, failAt, cancelAt int, canceled bool) (int, string) {
+					comparisons++
+					want, writes, kind := ktmlParityRender(generated, mode.scope, failAt, cancelAt, canceled)
+					got, _, _ := ktmlParityRender(interpreted, mode.scope, failAt, cancelAt, canceled)
+					if got != want {
+						t.Errorf("%s: interpreter differs from generated Go\n--- generated\n%s\n--- interpreted\n%s", label, want, got)
+					}
+					if mode.delegate {
+						// The generated public Render handed to the hook
+						// must render exactly as the compiled body did.
+						restore := dev.SetRenderer(ktmlParityDelegate{program: program})
+						delegated, _, _ := ktmlParityRender(generated, mode.scope, failAt, cancelAt, canceled)
+						restore()
+						if delegated != want {
+							t.Errorf("%s: delegated Render differs from generated Go\n--- generated\n%s\n--- delegated\n%s", label, want, delegated)
+						}
+					}
+					return writes, kind
+				}
+				writes, kind := compare("render", 0, 0, false)
+				outcomes[kind]++
+				if kind == "ok" {
+					rendered[scenario.component] = true
+				}
+				compare("canceled before render", 0, 0, true)
+				for at := 1; at <= writes; at++ {
+					compare(fmt.Sprintf("write %d fails", at), at, 0, false)
+					compare(fmt.Sprintf("canceled after write %d", at), 0, at, false)
+				}
+			})
+		}
+	}
+	for _, scenario := range scenarios {
+		if !rendered[scenario.component] {
+			t.Errorf("no scenario of %s rendered without an error", scenario.component)
+			rendered[scenario.component] = true
+		}
+	}
+	kinds := make([]string, 0, len(outcomes))
+	for kind, count := range outcomes {
+		kinds = append(kinds, fmt.Sprintf("%s:%d", kind, count))
+	}
+	sort.Strings(kinds)
+	t.Logf("PARITY package=PACKAGE development=%v components=%d scenarios=%d comparisons=%d outcomes=%s", ktmlParityDevelopment, len(rendered), len(scenarios), comparisons, strings.Join(kinds, ","))
+}

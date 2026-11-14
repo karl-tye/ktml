@@ -1,0 +1,55 @@
+import { EnquiryCount } from "components"
+
+html [count: string] {
+	head {
+		title {
+			"Back Office"
+		}
+		script src="/static/htmx.min.js" {
+		}
+	}
+	body hx-boost="true" x-data="{ filtersOpen: false }" class="min-h-screen bg-slate-100 text-slate-900" {
+		header class="border-b border-slate-200 bg-white" {
+			div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4" {
+				h1 id="page-title" class="text-xl font-bold" {
+					"Operations Dashboard"
+				}
+				nav aria-label="Primary" {
+					a href="/enquiries" hx-get="/enquiries" hx-target="#enquiry-list" hx-push-url="true" class="font-medium text-blue-700" {
+						"Enquiries"
+					}
+				}
+			}
+		}
+		main class="mx-auto grid max-w-6xl gap-6 px-6 py-8 lg:grid-cols-3" {
+			section class="space-y-4 lg-col-span-2" {
+				div class="flex items-center justify-between" {
+					h2 class="text-lg font-semibold" {
+						"Incoming enquiries"
+					}
+					EnquiryCount count="{count}"
+				}
+				div id="enquiry-list" hx-get="/enquiries" hx-trigger="load" class="space-y-3" {
+				}
+			}
+			aside class="rounded-xl bg-white p-5 shadow-sm" {
+				h2 class="mb-4 text-lg font-semibold" {
+					"Create enquiry"
+				}
+				form hx-post="/enquiries" hx-target="#enquiry-list" hx-swap="afterbegin" class="space-y-4" {
+					div id="enquiry-inputs" class="grid gap-3" {
+						div {
+							input id="enquiry-customer" name="customer" placeholder="Customer name" required="true" type="text"
+						}
+						div {
+							input id="enquiry-summary" name="summary" placeholder="What does the customer need?" required="true" type="text"
+						}
+					}
+					button id="create-enquiry" type="submit" class="w-full rounded-md bg-blue-700 px-4 py-2 font-semibold text-white" {
+						"Create enquiry"
+					}
+				}
+			}
+		}
+	}
+}

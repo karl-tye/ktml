@@ -1,0 +1,66 @@
+// Stories for the evidence browser: collections, optional evidence, and JSON
+// values given as fixtures.
+import { InteractiveReview } from "./components.ktml"
+
+fixture greeting: JSONValue = `"greeting"`
+fixture reservation: JSONValue = `"reservation"`
+fixture zero: JSONValue = `0`
+fixture twelve: JSONValue = `12.5`
+fixture forty: JSONValue = `40`
+
+story InteractiveReview.WithEvidence [
+	view = [
+		results = [
+			[
+				key = "greeting",
+				scored = true,
+				criterionResultView = [
+					criterion = greeting,
+					evidence = [start = zero, end = twelve],
+					standardID = "greeting",
+					mustPass = false,
+					outcomeClass = "border-green text-green",
+					outcome = "PASS",
+					hasTimestamp = true,
+					timestamp = "00:00",
+					note = "The bookseller gave the shop's name and their own.",
+				],
+			],
+			[
+				key = "reservation",
+				scored = true,
+				criterionResultView = [
+					criterion = reservation,
+					evidence = None,
+					standardID = "reservation",
+					mustPass = true,
+					outcomeClass = "border-red text-red",
+					outcome = "FAIL",
+					hasTimestamp = false,
+					timestamp = "",
+					note = "The title was out of stock and no reservation was offered.",
+				],
+			],
+		],
+		turns = [
+			[
+				key = 1,
+				transcriptTurnView = [
+					startSeconds = "0",
+					endSeconds = "12.5",
+					start = zero,
+					end = twelve,
+					even = false,
+					time = "00:00",
+					hasSpeaker = true,
+					speaker = "Bookseller",
+					text = "Good morning, Larkspur Books, Priya speaking.",
+				],
+			],
+		],
+	],
+]
+
+story InteractiveReview.Empty [
+	view = [results = [], turns = []],
+]

@@ -1,0 +1,5 @@
+Contractor [] {
+	form hx-target-4*="#errors" hx-target-*="#all" {}
+	div (hx-target-5*="#b"
+		a*b)
+}

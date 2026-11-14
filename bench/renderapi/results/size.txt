@@ -1,0 +1,23 @@
+# renderapi size report
+go: go version go1.27.0 linux/amd64
+GOAMD64: v1
+commit: 87b2ef6
+
+## Generated source per tree (gogen output: *_ktml.go, *_ktmlschema.go)
+tree       bytes    lines    files
+a          48068     1053        9
+h          45751     1024        9
+b          46274     1024        9
+
+## Hand-lowered source per tree (script/script_hand.go)
+tree       bytes    lines
+a           3140       81
+h           2936       77
+b           2958       77
+
+## Linked .text (cmd/size, go build -trimpath)
+binary         .text      delta   generated-syms   runtime-syms
+baseline      628177          -                -              -
+A             734161     105984            43032           5319
+H             732625     104448            42276           5319
+B             730641     102464            40517           5068

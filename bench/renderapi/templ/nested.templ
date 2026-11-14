@@ -1,0 +1,88 @@
+package tpl
+
+import (
+	"strconv"
+
+	"github.com/karl-tye/ktml/bench/renderapi/templ/tplui"
+)
+
+templ Box(depth int64) {
+	<div class="box" data-depth={ strconv.FormatInt(depth, 10) }>
+		{ children... }
+	</div>
+}
+
+templ Panel(depth int64, title templ.Component) {
+	<section class="panel" data-depth={ strconv.FormatInt(depth, 10) }>
+		<div class="panel-title">
+			@title
+		</div>
+		<div class="panel-body">
+			{ children... }
+		</div>
+	</section>
+}
+
+templ PanelTitle(text string) {
+	<h2>{ text }</h2>
+}
+
+templ NestedSame(label string) {
+	@Box(1) {
+		@Box(2) {
+			@Box(3) {
+				@Box(4) {
+					@Box(5) {
+						@Box(6) {
+							@Box(7) {
+								@Box(8) {
+									<p class="leaf">{ label }</p>
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+templ NestedCross(label string) {
+	@tplui.Box(1) {
+		@tplui.Box(2) {
+			@tplui.Box(3) {
+				@tplui.Box(4) {
+					@tplui.Box(5) {
+						@tplui.Box(6) {
+							@tplui.Box(7) {
+								@tplui.Box(8) {
+									<p class="leaf">{ label }</p>
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+templ NestedSlots(label string) {
+	@Panel(1, PanelTitle("Level 1")) {
+		@Panel(2, PanelTitle("Level 2")) {
+			@Panel(3, PanelTitle("Level 3")) {
+				@Panel(4, PanelTitle("Level 4")) {
+					@Panel(5, PanelTitle("Level 5")) {
+						@Panel(6, PanelTitle("Level 6")) {
+							@Panel(7, PanelTitle("Level 7")) {
+								@Panel(8, PanelTitle("Level 8")) {
+									<p class="leaf">{ label }</p>
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

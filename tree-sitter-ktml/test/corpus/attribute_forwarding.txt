@@ -1,0 +1,72 @@
+==================
+Attribute spreads and bag literals
+==================
+
+Page [] {
+  input type="text" ...attrs
+  input (...view.attrs if on { ...more })
+  Field label="x" attrs=(required if on { disabled } ...more) "y"
+  Field attrs=()
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list)
+    (element_body
+      (element
+        (identifier)
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal)))
+        (spread_attribute
+          (path
+            (identifier))))
+      (element
+        (identifier)
+        (attribute_group
+          (spread_attribute
+            (path
+              (identifier)
+              (identifier)))
+          (attribute_condition
+            (path_condition
+              (path
+                (identifier)))
+            (attribute_block
+              (spread_attribute
+                (path
+                  (identifier)))))))
+      (element
+        (identifier)
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal)))
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (attribute_bag
+              (attribute
+                (attribute_name))
+              (attribute_condition
+                (path_condition
+                  (path
+                    (identifier)))
+                (attribute_block
+                  (attribute
+                    (attribute_name))))
+              (spread_attribute
+                (path
+                  (identifier))))))
+        (text
+          (string_literal)))
+      (element
+        (identifier)
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (attribute_bag)))))))

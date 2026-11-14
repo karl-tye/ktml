@@ -1,0 +1,30 @@
+// Host Schema converted from widgets/widgets.templ by ktml migrate templ.
+
+// List (widgets/widgets.templ:11).
+record ListView [
+	items: [ListItem],
+]
+
+// An item of List's loop at widgets/widgets.templ:12.
+record ListItem [
+	key: string,
+	idItemID: string,
+	labelItem: string,
+]
+
+// Panel (widgets/widgets.templ:20).
+record PanelView [
+	labelItem: string,
+]
+
+// Stamp (widgets/widgets.templ:25).
+record StampView [
+	datetimeNowUTCFormat: string,
+	text: string,
+]
+
+// Greeting (widgets/widgets.templ:30).
+record GreetingView [
+	greeting: string,
+	ctxValueUserKey: string,
+]

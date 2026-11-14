@@ -1,0 +1,10 @@
+package tplui
+
+import "strconv"
+
+// Box is the Nested level used across packages by tpl.NestedCross.
+templ Box(depth int64) {
+	<div class="box" data-depth={ strconv.FormatInt(depth, 10) }>
+		{ children... }
+	</div>
+}

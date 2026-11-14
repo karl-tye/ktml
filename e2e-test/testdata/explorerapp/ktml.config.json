@@ -1,0 +1,7 @@
+{
+  "explorer": {
+    "static": { "dir": "static", "url": "/static" },
+    "stylesheets": ["/static/css/app.css"],
+    "body_class": "paper bg-base"
+  }
+}

@@ -1,0 +1,6 @@
+import { User as Member, Address } from "./records.ktmlschema"
+
+Profile [user: Member, addresses: [Address], manager?: Member, rank: integer = 1] {
+	p { "{user.address.city}" }
+	a href="/users/{user.id}" { "{user.name}" }
+}

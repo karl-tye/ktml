@@ -1,0 +1,13 @@
+VendorRow(vendor: Vendor) {
+	tr {
+		td "{vendor.name}"
+		td {
+			button hx-post="/vendors/{vendor.id}/approve" "Approve"
+			button hx-post="/vendors/approve" "Broken"
+			button hx-delete="/vendors/{vendor.id}/approve" "Wrong method"
+			a hx-get="/vendors/{vendor.id}/invoices/{vendor.logo}/{vendor.extra}" "Extra"
+			a hx-get="/vendors/" "All"
+			a hx-get="/nowhere" "Missing"
+		}
+	}
+}

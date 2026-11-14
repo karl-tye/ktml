@@ -1,0 +1,5 @@
+module example.com/larkspur
+
+go 1.26.3
+
+require github.com/karl-tye/ktml v0.0.0

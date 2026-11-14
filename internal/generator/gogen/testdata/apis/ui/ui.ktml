@@ -1,0 +1,24 @@
+Card [title: string, subtitle?: string, compact: boolean = false, count: integer = 0, children?: content, actions?: content] {
+	article class="card" data-count="{count}" {
+		h2 "{title}"
+		if subtitle? {
+			p class="sub" "{subtitle}"
+		}
+		if !compact {
+			div class="body" {
+				children
+			}
+		}
+		if actions? {
+			footer {
+				actions
+			}
+		}
+	}
+}
+
+Frame [children: content] {
+	section {
+		children
+	}
+}

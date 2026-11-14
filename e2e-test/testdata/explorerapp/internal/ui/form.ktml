@@ -1,0 +1,405 @@
+// Form components: fields, choices, buttons, badges, and the lockable form
+// whose fields open for editing on request.
+import { FieldWithErrorView, SelectWithErrorView, ChoiceOptionView, ActionButtonView, PrimaryActionButtonView, SuccessActionButtonView, DangerActionButtonView, BadgeView, StatusBadgeView, LockedFormView, SaveBarView, SaveFooterView } from "./ui.ktmlschema"
+
+// TextField is a labelled input with an underline.
+TextField [label: string, inputType: string, name: string, value: string, attrs: Attributes] {
+	label class="block" {
+		span class="mb-1 block text-xs uppercase tracking-wide text-subtext0" "{label}"
+		" "
+		input (
+			type="{inputType}"
+			name="{name}"
+			value="{value}"
+			class="w-full border-0 border-b border-surface1 bg-transparent px-0 py-1 text-text outline-none focus:border-blue"
+			...attrs
+		)
+	}
+}
+
+// FieldWithError is a TextField that shows its validation message.
+FieldWithError [view: FieldWithErrorView, attrs: Attributes] {
+	label class="block" {
+		span (
+			if view.hasError { class="mb-1 block text-xs uppercase tracking-wide text-red" } else { class="mb-1 block text-xs uppercase tracking-wide text-subtext0" }
+		) "{view.label}"
+		" "
+		input (
+			type="{view.inputType}"
+			name="{view.name}"
+			value="{view.value}"
+			class="{view.inputClass}"
+			...attrs
+		)
+		" "
+		if view.hasError {
+			span class="mt-1 block text-xs text-red" "{view.error}"
+		}
+	}
+}
+
+// SelectField is a labelled select with an underline.
+SelectField [label: string, name: string, attrs: Attributes, children?: content] {
+	label class="block" {
+		span class="mb-1 block text-xs uppercase tracking-wide text-subtext0" "{label}"
+		" "
+		select (
+			name="{name}"
+			class="w-full appearance-none border-0 border-b border-surface1 bg-transparent px-0 py-1 text-text outline-none focus:border-blue"
+			...attrs
+		) {
+			children
+		}
+	}
+}
+
+// SelectWithError is a SelectField that shows its validation message.
+SelectWithError [view: SelectWithErrorView, attrs: Attributes, children?: content] {
+	label class="block" {
+		span (
+			if view.hasError { class="mb-1 block text-xs uppercase tracking-wide text-red" } else { class="mb-1 block text-xs uppercase tracking-wide text-subtext0" }
+		) "{view.label}"
+		" "
+		select name="{view.name}" class="{view.selectClass}" ...attrs {
+			children
+		}
+		" "
+		if view.hasError {
+			span class="mt-1 block text-xs text-red" "{view.error}"
+		}
+	}
+}
+
+// EditableInput is a TextField that is disabled until its LockedForm is
+// unlocked.
+EditableInput [label: string, inputType: string, name: string, value: string, attrs: Attributes] {
+	label class="block" {
+		span class="mb-1 block text-xs uppercase tracking-wide text-subtext0" "{label}"
+		" "
+		input (
+			type="{inputType}"
+			name="{name}"
+			:disabled="!editing"
+			value="{value}"
+			class="w-full border-0 border-b border-transparent bg-transparent px-0 py-1 text-text outline-none enabled:border-surface1 enabled:focus:border-blue"
+			...attrs
+		)
+	}
+}
+
+// EditableSelect is a SelectField that is disabled until its LockedForm is
+// unlocked.
+EditableSelect [label: string, name: string, attrs: Attributes, children?: content] {
+	label class="block" {
+		span class="mb-1 block text-xs uppercase tracking-wide text-subtext0" "{label}"
+		" "
+		select (
+			name="{name}"
+			:disabled="!editing"
+			class="w-full appearance-none border-0 border-b border-transparent bg-transparent px-0 py-1 text-text outline-none enabled:border-surface1 enabled:focus:border-blue"
+			...attrs
+		) {
+			children
+		}
+	}
+}
+
+// EditableCheckbox is a checkbox that is disabled until its LockedForm is
+// unlocked.
+EditableCheckbox [label: string, name: string, checked: boolean, attrs: Attributes] {
+	label class="flex items-center gap-3" {
+		input (
+			type="checkbox"
+			name="{name}"
+			value="true"
+			:disabled="!editing"
+			checked="{checked}"
+			class="h-4 w-4 rounded border-surface1 text-blue"
+			...attrs
+		)
+		" "
+		span class="text-sm font-medium text-text" "{label}"
+	}
+}
+
+// ReadOnlyField shows a labelled value that cannot be edited.
+ReadOnlyField [label: string, children?: content] {
+	div class="block" {
+		span class="mb-1 block text-xs uppercase tracking-wide text-subtext0" "{label}"
+		div class="font-medium text-text" {
+			children
+		}
+	}
+}
+
+// Input is a bare input.
+Input [inputType: string, name: string, value: string, attrs: Attributes] {
+	input (
+		class="block h-9 w-full border-0 border-b-2 border-surface0 bg-transparent px-2 text-text outline-none placeholder:text-subtext1 focus:border-blue invalid:focus:border-red"
+		type="{inputType}"
+		name="{name}"
+		value="{value}"
+		autocomplete="off"
+		...attrs
+	)
+}
+
+// PriceInput is an input for an amount of money.
+PriceInput [name: string, value: string, attrs: Attributes] {
+	div class="relative flex items-center" {
+		span class="absolute text-text" "$"
+		" "
+		input (
+			class="block h-9 w-full border-0 border-b-2 border-surface0 bg-transparent pl-4 pr-2 text-text outline-none focus:border-blue invalid:focus:border-red"
+			type="number"
+			inputmode="decimal"
+			name="{name}"
+			value="{value}"
+			step="0.01"
+			autocomplete="off"
+			...attrs
+		)
+	}
+}
+
+// ChoiceOption is a Choice from a view.
+ChoiceOption [view: ChoiceOptionView] {
+	Choice (
+		name="{view.name}"
+		value="{view.value}"
+		label="{view.label}"
+		chosen="{view.chosen}"
+	)
+}
+
+// Choice is a radio button drawn as a pill.
+Choice [name: string, value: string, label: string, chosen: boolean] {
+	input (
+		type="radio"
+		name="{name}"
+		value="{value}"
+		aria-label="{label}"
+		class="h-8 appearance-none rounded-full border border-surface1 bg-surface0 px-3 text-xs text-subtext1 checked:border-blue checked:bg-blue checked:text-crust"
+		required
+		checked="{chosen}"
+	)
+}
+
+// Label is a caption above its children.
+Label [label: string, children?: content] {
+	label class="text-sm font-medium text-subtext0" {
+		"{label}"
+		children
+	}
+}
+
+// TextArea is a bare textarea.
+TextArea [name: string, value: string, attrs: Attributes] {
+	textarea (
+		class="block min-h-24 w-full border-0 border-b-2 border-surface0 bg-transparent px-2 py-1 text-text outline-none placeholder:text-subtext1 focus:border-blue"
+		name="{name}"
+		autocomplete="off"
+		...attrs
+	) "{value}"
+}
+
+// Submit is a form's submit button.
+Submit [text: string] {
+	button (
+		type="submit"
+		class="inline-flex items-center gap-2 rounded-md bg-blue px-4 py-2 text-sm font-semibold text-crust hover:bg-blue/90"
+	) "{text}"
+}
+
+// SectionHeader titles a section of a form, with optional actions.
+SectionHeader [title: string, actions?: content] {
+	div class="mb-4 flex items-center justify-between" {
+		h3 class="text-lg font-semibold text-text" "{title}"
+		if actions? {
+			div class="flex items-center gap-2" {
+				actions
+			}
+		}
+	}
+}
+
+// ActionButton is a button with an optional icon, styled by its view.
+ActionButton [view: ActionButtonView, icon?: content, attrs: Attributes] {
+	button class="{view.toneClass}" ...attrs {
+		if icon? {
+			span class="mr-1" {
+				icon
+			}
+			" "
+		}
+		"{view.text}"
+	}
+}
+
+// PrimaryActionButton is the main action of a form.
+PrimaryActionButton [view: PrimaryActionButtonView, icon?: content, attrs: Attributes] {
+	if icon? {
+		ActionButton view="{view.actionButton}" attrs="{attrs}" {
+			slot icon {
+				icon
+			}
+		}
+	} else {
+		ActionButton view="{view.actionButton}" attrs="{attrs}"
+	}
+}
+
+// SuccessActionButton confirms something.
+SuccessActionButton [view: SuccessActionButtonView, icon?: content, attrs: Attributes] {
+	if icon? {
+		ActionButton view="{view.actionButton}" attrs="{attrs}" {
+			slot icon {
+				icon
+			}
+		}
+	} else {
+		ActionButton view="{view.actionButton}" attrs="{attrs}"
+	}
+}
+
+// DangerActionButton removes something.
+DangerActionButton [view: DangerActionButtonView, icon?: content, attrs: Attributes] {
+	if icon? {
+		ActionButton view="{view.actionButton}" attrs="{attrs}" {
+			slot icon {
+				icon
+			}
+		}
+	} else {
+		ActionButton view="{view.actionButton}" attrs="{attrs}"
+	}
+}
+
+// SecondaryActionButton is a quiet outlined button.
+SecondaryActionButton [text: string, icon?: content, attrs: Attributes] {
+	button (
+		class="inline-flex min-h-10 items-center rounded-md border border-surface1 bg-base px-3 py-1.5 text-xs font-medium text-text hover:bg-surface0 disabled:opacity-50"
+		...attrs
+	) {
+		if icon? {
+			span class="mr-1" {
+				icon
+			}
+			" "
+		}
+		"{text}"
+	}
+}
+
+// Badge is a short label with an optional icon.
+Badge [view: BadgeView, icon?: content] {
+	span class="{view.badgeClass}" {
+		if icon? {
+			span class="mr-1" {
+				icon
+			}
+			" "
+		}
+		"{view.text}"
+	}
+}
+
+// StatusBadge is a rounded status label.
+StatusBadge [view: StatusBadgeView] {
+	span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium {view.toneClass}" "{view.text}"
+}
+
+// LoadingSpinner is a spinner with a caption.
+LoadingSpinner [text: string] {
+	div class="py-4 text-center" {
+		svg class="mx-auto h-5 w-5 animate-spin text-blue" fill="none" viewBox="0 0 24 24" {
+			circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+			" "
+			path (
+				class="opacity-75"
+				fill="currentColor"
+				d="M12 2a10 10 0 0 1 10 10h-4a6 6 0 0 0-6-6z"
+			)
+		}
+		p class="mt-2 text-sm text-subtext0" "{text}"
+	}
+}
+
+// LockedForm is a form whose Editable fields stay disabled until its
+// EditToggle unlocks it; unlocking one form locks the others.
+LockedForm [view: LockedFormView, attrs: Attributes, children?: content] {
+	form (
+		x-data="{view.alpineState}"
+		@lock-others.window=`if ($event.detail !== id) { editing = false; confirmed = false }`
+		...attrs
+	) {
+		children
+	}
+}
+
+// EditToggle unlocks and locks its LockedForm.
+EditToggle {
+	button (
+		type="button"
+		@click="editing = !editing; if (editing) $dispatch('lock-others', id)"
+		class="flex items-center gap-1 text-xs font-medium text-subtext0 hover:text-text"
+	) {
+		i class="fas fa-pen" x-show="!editing"
+		" "
+		i class="fas fa-xmark" x-show="editing" x-cloak
+		" "
+		span x-text="editing ? 'Cancel' : 'Edit'"
+	}
+}
+
+// SaveBar asks for confirmation before saving an unlocked form's changes.
+SaveBar [view: SaveBarView, attr: Attributes] {
+	div (
+		x-show="{view.visibleWhen}"
+		x-transition.opacity
+		x-cloak
+		class="absolute inset-x-0 bottom-0 z-20 flex items-center justify-between border-t border-surface0 bg-base p-4"
+	) {
+		label class="flex items-center gap-3" {
+			input (
+				type="checkbox"
+				x-model="confirmed"
+				class="h-4 w-4 rounded border-surface1 text-blue"
+			)
+			" "
+			span class="text-sm text-subtext1" "{view.message}"
+		}
+		" "
+		button (
+			...attr
+			:disabled="!confirmed"
+			class="rounded-md bg-blue px-5 py-2 text-sm font-semibold text-crust disabled:opacity-50"
+		) "Save"
+	}
+}
+
+// SaveFooter is SaveBar at the foot of a dialog.
+SaveFooter [view: SaveFooterView, attr: Attributes] {
+	div (
+		x-show="{view.visibleWhen}"
+		x-transition.opacity
+		x-cloak
+		class="flex shrink-0 flex-col gap-3 border-t border-surface0 bg-mantle p-4"
+	) {
+		label class="flex items-center gap-3" {
+			input (
+				type="checkbox"
+				x-model="confirmed"
+				class="h-4 w-4 rounded border-surface1 text-blue"
+			)
+			" "
+			span class="text-sm text-subtext1" "{view.message}"
+		}
+		" "
+		button (
+			...attr
+			:disabled="!confirmed"
+			class="w-full rounded-md bg-blue py-2 text-sm font-semibold text-crust disabled:opacity-50"
+		) "Save"
+	}
+}

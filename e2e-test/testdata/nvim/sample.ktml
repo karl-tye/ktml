@@ -1,0 +1,12 @@
+import { Field } from "./ui"
+
+Card [title: string, items: [Item], on: boolean] {
+	div (class="flex" x-data=`{ open: false }` @click="open = !open" hx-vals=`{"a": 1}` if on { class="b" }) {
+		for item in items key item.id {
+			p "{item.name}"
+		}
+		Field attrs=(class="q")
+		script type="application/json" ```{"k": 1}```
+		style ```p { color: red }```
+	}
+}

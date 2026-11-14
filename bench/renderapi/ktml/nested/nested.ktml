@@ -1,0 +1,85 @@
+// Box and Panel are the levels of the ADR-0003 Nested benchmark. NestedSame
+// fills a depth-8 chain of same-package Box calls through the children slot;
+// NestedSlots does the same with Panel, which also has one named slot per
+// level. cross/cross.ktml builds the same chain as NestedSame from another
+// package.
+Box [depth: integer, children: content] {
+	div class="box" data-depth="{depth}" {
+		children
+	}
+}
+
+Panel [depth: integer, children: content, title: content] {
+	section class="panel" data-depth="{depth}" {
+		div class="panel-title" {
+			title
+		}
+		div class="panel-body" {
+			children
+		}
+	}
+}
+
+NestedSame [label: string] {
+	Box depth=1 {
+		Box depth=2 {
+			Box depth=3 {
+				Box depth=4 {
+					Box depth=5 {
+						Box depth=6 {
+							Box depth=7 {
+								Box depth=8 {
+									p class="leaf" "{label}"
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+NestedSlots [label: string] {
+	Panel depth=1 {
+		slot title {
+			h2 "Level 1"
+		}
+		Panel depth=2 {
+			slot title {
+				h2 "Level 2"
+			}
+			Panel depth=3 {
+				slot title {
+					h2 "Level 3"
+				}
+				Panel depth=4 {
+					slot title {
+						h2 "Level 4"
+					}
+					Panel depth=5 {
+						slot title {
+							h2 "Level 5"
+						}
+						Panel depth=6 {
+							slot title {
+								h2 "Level 6"
+							}
+							Panel depth=7 {
+								slot title {
+									h2 "Level 7"
+								}
+								Panel depth=8 {
+									slot title {
+										h2 "Level 8"
+									}
+									p class="leaf" "{label}"
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

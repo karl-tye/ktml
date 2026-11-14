@@ -1,0 +1,47 @@
+// Presenters converted from widgets/widgets.templ by ktml migrate templ. They map the
+// templ parameters into the Host Schema records the KTML components render.
+// Edit freely: the converter writes them once.
+
+package widgets
+
+import (
+	"context"
+	"time"
+)
+
+// NewListView presents List (widgets/widgets.templ:11).
+func NewListView(items []Item) ListView {
+	var v ListView
+	for _, item := range items {
+		var itemItem ListItem
+		// TODO(ktml-migrate): confirm item.ID is unique and non-empty; a repeated key is a render error.
+		itemItem.Key = item.ID
+		itemItem.IdItemID = item.ID
+		itemItem.LabelItem = label(item)
+		v.Items = append(v.Items, itemItem)
+	}
+	return v
+}
+
+// NewPanelView presents Panel (widgets/widgets.templ:20).
+func NewPanelView(item Item) PanelView {
+	var v PanelView
+	v.LabelItem = label(item)
+	return v
+}
+
+// NewStampView presents Stamp (widgets/widgets.templ:25).
+func NewStampView(text string, now time.Time) StampView {
+	var v StampView
+	v.DatetimeNowUTCFormat = now.UTC().Format("2006")
+	v.Text = text
+	return v
+}
+
+// NewGreetingView presents Greeting (widgets/widgets.templ:30).
+func NewGreetingView(ctx context.Context, greeting string) GreetingView {
+	var v GreetingView
+	v.Greeting = greeting
+	v.CtxValueUserKey = ctx.Value(UserKey{}).(string)
+	return v
+}

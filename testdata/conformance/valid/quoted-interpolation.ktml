@@ -1,0 +1,3 @@
+Card [name: string, user: User] {
+  a title="For {user.Name}" { "Hello, {name}!" }
+}

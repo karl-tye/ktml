@@ -1,0 +1,45 @@
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": [
+    {
+      "range": {
+        "end": {
+          "character": 24,
+          "line": 17
+        },
+        "start": {
+          "character": 9,
+          "line": 17
+        }
+      },
+      "uri": "file://$APP/web/router.go"
+    },
+    {
+      "range": {
+        "end": {
+          "character": 36,
+          "line": 1
+        },
+        "start": {
+          "character": 15,
+          "line": 1
+        }
+      },
+      "uri": "file://$APP/views/list.ktml"
+    },
+    {
+      "range": {
+        "end": {
+          "character": 47,
+          "line": 4
+        },
+        "start": {
+          "character": 19,
+          "line": 4
+        }
+      },
+      "uri": "file://$APP/views/vendors.ktml"
+    }
+  ]
+}

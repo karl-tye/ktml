@@ -1,0 +1,31 @@
+import { SearchState as Search } from "./states.ktmlschema"
+
+SearchResults [state: Search, query: string]
+
+SearchResults [state = Loading] {
+	p { "Searching {query}" }
+}
+
+SearchResults [state = Search.Loaded, items, total as count] {
+	p { "{count}" }
+}
+
+SearchResults [state = Failed, state as message] {
+	p { "{message}" }
+}
+
+Subtitle [subtitle?: string] default {
+	span
+}
+
+Subtitle [subtitle = Some, value as text] {
+	span { "{text}" }
+}
+
+Subtitle [subtitle = None] {}
+
+Flag [on: boolean = false]
+
+Flag [on = true] { "on" }
+
+Flag [on = false] { "off" }

@@ -1,0 +1,30 @@
+Notice [text: string] {
+	p "{text}"
+}
+
+Badge [label: string] {
+	span "{label}"
+}
+
+Card [title: string] {
+	div {
+		Icon
+		h2 "{title}"
+	}
+}
+
+Icon [] {
+	i class="icon"
+}
+
+FeedItem [text: string] {
+	li "{text}"
+}
+
+Unused [] {
+	UnusedChild
+}
+
+UnusedChild [] {
+	span "Only Unused calls me"
+}

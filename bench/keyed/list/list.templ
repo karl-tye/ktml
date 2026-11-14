@@ -1,0 +1,21 @@
+package list
+
+import "strconv"
+
+templ TemplFlatList(items []Item) {
+	<ul class="items">
+		for _, item := range items {
+			<li class="item" data-count={ strconv.FormatInt(item.Count, 10) }><span>{ item.Title }</span></li>
+		}
+	</ul>
+}
+
+templ TemplNestedList(rows []Row) {
+	for _, row := range rows {
+		<section class="row"><h2>{ row.Title }</h2><ul>
+			for _, child := range row.Children {
+				<li>{ child.Label }</li>
+			}
+		</ul></section>
+	}
+}

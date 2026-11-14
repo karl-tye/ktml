@@ -1,0 +1,292 @@
+===
+Fixtures with string, backtick JSON, number, and boolean values
+===
+
+fixture report: TrustedURL = "/reports/42"
+fixture payload: JSON = `{"id": 7, "tags": ["a"]}`
+fixture count: integer = 3
+fixture enabled: boolean = false
+
+---
+
+(source_file
+  (fixture_declaration
+    (identifier)
+    (type
+      (identifier))
+    (string_literal))
+  (fixture_declaration
+    (identifier)
+    (type
+      (identifier))
+    (string_literal))
+  (fixture_declaration
+    (identifier)
+    (type
+      (identifier))
+    (number_literal))
+  (fixture_declaration
+    (identifier)
+    (type
+      (identifier))
+    (boolean_literal)))
+
+===
+Bare stories and stories with only arguments or only a body
+===
+
+story Card.Bare
+story Card.Args [title = "Args"]
+story Card.Body {
+  p "Only a body"
+}
+
+---
+
+(source_file
+  (story_declaration
+    (identifier)
+    (identifier))
+  (story_declaration
+    (identifier)
+    (identifier)
+    (story_arguments
+      (value_argument
+        (identifier)
+        (string_literal))))
+  (story_declaration
+    (identifier)
+    (identifier)
+    (element_body
+      (element
+        (identifier)
+        (text
+          (string_literal))))))
+
+===
+Story with every value shape and a trailing comma
+===
+
+story Pipeline.Running [
+  title = "Run",
+  score = 4.5,
+  open = true,
+  note = None,
+  link = report,
+  progress = Running [callId = "c", step = 2,],
+  idle = Idle [],
+  stages = [recording = Done, transcription = Active],
+  tags = ["a", "b"],
+  rows = [[label = "a", note = None], [label = "b"]],
+  notes = [],
+]
+
+---
+
+(source_file
+  (story_declaration
+    (identifier)
+    (identifier)
+    (story_arguments
+      (value_argument
+        (identifier)
+        (string_literal))
+      (value_argument
+        (identifier)
+        (number_literal))
+      (value_argument
+        (identifier)
+        (boolean_literal))
+      (value_argument
+        (identifier)
+        (value_name
+          (identifier)))
+      (value_argument
+        (identifier)
+        (value_name
+          (identifier)))
+      (value_argument
+        (identifier)
+        (value_name
+          (identifier)
+          (value_payload
+            (value_argument
+              (identifier)
+              (string_literal))
+            (value_argument
+              (identifier)
+              (number_literal)))))
+      (value_argument
+        (identifier)
+        (value_name
+          (identifier)
+          (value_payload)))
+      (value_argument
+        (identifier)
+        (record_value
+          (value_argument
+            (identifier)
+            (value_name
+              (identifier)))
+          (value_argument
+            (identifier)
+            (value_name
+              (identifier)))))
+      (value_argument
+        (identifier)
+        (list_value
+          (string_literal)
+          (string_literal)))
+      (value_argument
+        (identifier)
+        (list_value
+          (record_value
+            (value_argument
+              (identifier)
+              (string_literal))
+            (value_argument
+              (identifier)
+              (value_name
+                (identifier))))
+          (record_value
+            (value_argument
+              (identifier)
+              (string_literal)))))
+      (value_argument
+        (identifier)
+        (list_value)))))
+
+===
+Story body with text, elements, slot fills, and conditions
+===
+
+story Card.Running [title = "Run"] {
+  "Body"
+  slot footer {
+    span "Footer"
+  }
+  if open {
+    p "Open"
+  }
+}
+
+---
+
+(source_file
+  (story_declaration
+    (identifier)
+    (identifier)
+    (story_arguments
+      (value_argument
+        (identifier)
+        (string_literal)))
+    (element_body
+      (text
+        (string_literal))
+      (slot_fill
+        (identifier)
+        (element_body
+          (element
+            (identifier)
+            (text
+              (string_literal)))))
+      (condition_node
+        (path_condition
+          (path
+            (identifier)))
+        (element_body
+          (element
+            (identifier)
+            (text
+              (string_literal))))))))
+
+===
+Arguments and body may start on later lines
+===
+
+story Card.Split
+  [title = "Split"]
+  {
+    "Body"
+  }
+
+---
+
+(source_file
+  (story_declaration
+    (identifier)
+    (identifier)
+    (story_arguments
+      (value_argument
+        (identifier)
+        (string_literal)))
+    (element_body
+      (text
+        (string_literal)))))
+
+===
+A payload bracket on a later line is not a payload
+:error
+===
+
+story Card.Broken [state = Done
+  [1]]
+
+---
+
+
+
+===
+Missing value is a syntax error
+:error
+===
+
+story Card.A [title = , open = true]
+
+---
+
+
+
+===
+Story and fixture stay usable as element, attribute, and field names
+===
+
+record Entry [story: string, fixture: string]
+Card[story: string] {
+  story fixture="x" {
+    fixture story
+  }
+}
+
+---
+
+(source_file
+  (record_declaration
+    (identifier)
+    (field_declaration
+      (identifier)
+      (type
+        (identifier)))
+    (field_declaration
+      (identifier)
+      (type
+        (identifier))))
+  (component_definition
+    (identifier)
+    (parameter_list
+      (parameter
+        (identifier)
+        (type
+          (identifier))))
+    (element_body
+      (element
+        (identifier)
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal)))
+        (element_body
+          (element
+            (identifier)
+            (attribute
+              (attribute_name))))))))

@@ -1,0 +1,15 @@
+Badge [a: boolean, b: boolean, note?: Note] {
+	if a && !b || (note? && note.flag) {
+		span "x"
+	} else if !note? {
+		if a {}
+	}
+	else {
+		p "none"
+	}
+	div {
+		if !(a || b) && a {
+			em "nested"
+		}
+	}
+}

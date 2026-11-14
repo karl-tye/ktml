@@ -1,0 +1,22 @@
+import { Person as Owner } from "../people/person.ktmlschema"
+
+record Address [
+	city: string,
+	zip?: string,
+]
+
+record User [
+	id: string,
+	name: string,
+	visits: integer,
+	ratio: number,
+	admin: boolean,
+	nickname?: string,
+	address: Address,
+	previous?: Address,
+	tags: [string],
+	aliases?: [string],
+	history: [[Address]],
+	owner: Owner,
+	backup?: Owner,
+]

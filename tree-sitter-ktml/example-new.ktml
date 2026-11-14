@@ -1,0 +1,74 @@
+import { Button, Card } from "./ui"
+
+// Base component definition
+Button[variant: "primary" | "secondary" | "danger", size: "small" | "large" = "small"]
+{
+  button {
+    . px-4 py-2 rounded font-medium
+    .hover opacity-80
+    slot
+  }
+}
+
+// Pattern matching for primary variant
+Button[variant="primary"]
+{
+  button {
+    . px-4 py-2 rounded font-medium bg-blue-600 text-white
+    .hover bg-blue-700
+    slot
+  }
+}
+
+// Pattern matching with multiple conditions
+Button[variant="primary" size="large"]
+{
+  button {
+    . px-6 py-3 text-lg rounded font-medium bg-blue-600 text-white
+    .hover bg-blue-700
+    slot
+  }
+}
+
+// OR condition pattern
+Button[variant="primary" | variant="secondary"]
+{
+  button {
+    .focus ring-2 ring-offset-2
+    slot
+  }
+}
+
+// Usage with indented attributes
+TodoApp[todos: string[], apiUrl: string]
+{
+  Card
+    title="Todo List"
+    variant="featured"
+    
+    div {
+      . space-y-4
+      
+      for todo in todos {
+        TodoItem
+          text=todo
+          deleteUrl="{apiUrl}/todos/{todo}"
+      }
+    }
+}
+
+TodoItem[text: string, deleteUrl: string]
+{
+  div {
+    . flex justify-between items-center p-4 border rounded
+    
+    span {
+      text
+    }
+    
+    Button
+      variant="danger"
+      hx-delete="{deleteUrl}"
+      "Delete"
+  }
+}

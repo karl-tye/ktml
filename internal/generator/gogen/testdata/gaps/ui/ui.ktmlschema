@@ -1,0 +1,20 @@
+record Address [
+	city: string,
+	verified: boolean,
+	note?: string,
+]
+
+record Member [
+	id: string,
+	name: string,
+	admin: boolean,
+	address?: Address,
+	tags?: [string],
+	flag?: boolean,
+	nickname?: string,
+]
+
+state Panel {
+	Open,
+	Closed [reason: string],
+}

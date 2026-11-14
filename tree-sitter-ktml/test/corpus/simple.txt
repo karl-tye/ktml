@@ -1,0 +1,27 @@
+===
+Simple import
+===
+
+import { Button } from "./ui"
+
+---
+
+(source_file
+  (import_statement
+    (identifier)
+    (string_literal)))
+
+===
+Simple element
+===
+
+div { "Hello" }
+
+---
+
+(source_file
+  (element
+    (identifier)
+    (element_body
+      (text
+        (string_literal)))))

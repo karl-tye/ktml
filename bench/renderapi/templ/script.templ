@@ -1,0 +1,28 @@
+package tpl
+
+import (
+	"strconv"
+
+	"github.com/karl-tye/ktml/bench/renderapi/model"
+)
+
+// ScriptHeavy renders page.Data with templ.JSONScript, which re-encodes the
+// json.RawMessage with encoding/json (HTML-safe escapes, trailing newline),
+// and the
+// trusted boot script through a templ.ComponentFunc (what templ.Raw is).
+templ ScriptHeavy(page *model.ScriptPage) {
+	<section class="lecturenotes" data-lecturenotes={ strconv.FormatInt(page.ID, 10) }>
+		@templ.JSONScript("lecturenotes-data", page.Data)
+		<h2 class="lecturenotes-title">{ page.Title }</h2>
+		<p class="summary">{ page.Summary }</p>
+		<ul class="links">
+			for i := range page.Links {
+				<li class="link">
+					<a href={ templ.URL(page.Links[i].Href) } title={ page.Links[i].Title }>{ page.Links[i].Label }</a><a class="download" href={ templ.SafeURL(page.Links[i].Download) } download>Download</a>
+					<p class="description">{ page.Links[i].Description }</p>
+				</li>
+			}
+		</ul>
+		@trustedScript(page.Boot)
+	</section>
+}

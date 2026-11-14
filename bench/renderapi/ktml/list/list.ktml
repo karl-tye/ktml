@@ -1,0 +1,22 @@
+import { Entry, Tag } from "./list.ktmlschema"
+
+// ListHeavy is the ADR-0003 ListHeavy benchmark: a keyed list of records,
+// each with a three-item nested keyed list and an optional note rendered
+// under a presence condition.
+ListHeavy [entries: [Entry]] {
+	ul class="entries" {
+		for entry in entries key entry.id {
+			li class="entry" data-score="{entry.score}" {
+				h3 "{entry.title}"
+				if entry.note? {
+					p class="note" "{entry.note}"
+				}
+				ul class="tags" {
+					for tag in entry.tags key tag.id {
+						li class="tag" "{tag.label}"
+					}
+				}
+			}
+		}
+	}
+}

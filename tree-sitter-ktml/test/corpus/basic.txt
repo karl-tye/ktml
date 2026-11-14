@@ -1,0 +1,252 @@
+===
+Import statements
+===
+
+import { Card, Button } from "./ui"
+import { Layout } from "./layout"
+import { Card as BaseCard } from "./ui"
+
+---
+
+(source_file
+  (import_statement
+    (identifier)
+    (identifier)
+    (string_literal))
+  (import_statement
+    (identifier)
+    (string_literal))
+  (import_statement
+    (import_alias
+      (identifier)
+      (identifier))
+    (string_literal)))
+
+===
+Basic element with ID and attributes
+===
+
+Page [] {
+  div#container class="legacy-class" hidden {
+    "Hello World"
+  }
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list)
+    (element_body
+      (element
+        (identifier)
+        (attribute
+          (element_id
+            (identifier)))
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal)))
+        (attribute
+          (attribute_name))
+        (element_body
+          (text
+            (string_literal)))))))
+
+===
+Component definition
+===
+
+Card[title: string, variant: string = "default"] {
+  div #card class="bg-white rounded-lg shadow-md p-6" {
+    h2 class="text-xl font-bold" {
+      "{title}"
+    }
+  }
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list
+      (parameter
+        (identifier)
+        (type
+          (identifier)))
+      (parameter
+        (identifier)
+        (type
+          (identifier))
+        (default_value
+          (string_literal))))
+    (element_body
+      (element
+        (identifier)
+        (attribute
+          (element_id
+            (identifier)))
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal)))
+        (element_body
+          (element
+            (identifier)
+            (attribute
+              (attribute_name)
+              (attribute_value
+                (string_literal)))
+            (element_body
+              (text
+                (interpolated_string
+                  (interpolation
+                    (path
+                      (identifier))))))))))))
+
+===
+String interpolation and ID reference
+===
+
+Modal[title: string] {
+  div#backdrop {
+    div#content {
+      h2 { "{title}" }
+      button hx-target="#{backdrop}" "Close"
+    }
+  }
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list
+      (parameter
+        (identifier)
+        (type
+          (identifier))))
+    (element_body
+      (element
+        (identifier)
+        (attribute
+          (element_id
+            (identifier)))
+        (element_body
+          (element
+            (identifier)
+            (attribute
+              (element_id
+                (identifier)))
+            (element_body
+              (element
+                (identifier)
+                (element_body
+                  (text
+                    (interpolated_string
+                      (interpolation
+                        (path
+                          (identifier)))))))
+              (element
+                (identifier)
+                (attribute
+                  (attribute_name)
+                  (attribute_value
+                    (interpolated_string
+                      (interpolation_literal)
+                      (interpolation
+                        (path
+                          (identifier))))))
+                (text
+                  (string_literal))))))))))
+
+===
+Condition in a component body
+===
+
+Nav [userLoggedIn: boolean] {
+  if userLoggedIn {
+    UserProfile
+  } else {
+    LoginForm
+  }
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list
+      (parameter
+        (identifier)
+        (type
+          (identifier))))
+    (element_body
+      (condition_node
+        (path_condition
+          (path
+            (identifier)))
+        (element_body
+          (element
+            (identifier)))
+        (element_body
+          (element
+            (identifier)))))))
+
+===
+Keyed repetition in an element body
+===
+
+TagList[tags: [string]] {
+  ul class="space-y-2" {
+    for tag in tags key tag {
+      li class="px-3 py-1 bg-gray-100 rounded" {
+        "{tag}"
+      }
+    }
+  }
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list
+      (parameter
+        (identifier)
+        (type
+          (collection_type
+            (type
+              (identifier))))))
+    (element_body
+      (element
+        (identifier)
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal)))
+        (element_body
+          (keyed_repetition
+            (identifier)
+            (path
+              (identifier))
+            (path
+              (identifier))
+            (element_body
+              (element
+                (identifier)
+                (attribute
+                  (attribute_name)
+                  (attribute_value
+                    (string_literal)))
+                (element_body
+                  (text
+                    (interpolated_string
+                      (interpolation
+                        (path
+                          (identifier))))))))))))))

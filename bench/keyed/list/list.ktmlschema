@@ -1,0 +1,17 @@
+record Item [
+	id: string,
+	title: string,
+	count: integer,
+]
+
+record Child [
+	id: integer,
+	label: string,
+]
+
+record Row [
+	id: integer,
+	title: string,
+	note?: string,
+	children: [Child],
+]

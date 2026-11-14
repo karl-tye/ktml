@@ -1,0 +1,23 @@
+Layout [title: string, children: content] {
+	doctype html
+	html lang="en" {
+		head {
+			title "{title}"
+			script src="/static/htmx.min.js" {}
+			script defer src="/static/alpine.min.js" {}
+		}
+		body {
+			header {
+				h1 id="page-title" "{title}"
+				Badge label="header"
+			}
+			main id="main" {
+				children
+			}
+		}
+	}
+}
+
+Badge [label: string] {
+	span class="badge" "{label}"
+}

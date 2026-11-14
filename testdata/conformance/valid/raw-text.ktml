@@ -1,0 +1,8 @@
+Page [] {
+	script defer ```
+	if (a && b < c) { go(`${x}`) }
+	```
+	style {
+		```a > b {}``` ```c{}```
+	}
+}

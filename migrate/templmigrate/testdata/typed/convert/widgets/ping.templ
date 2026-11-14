@@ -1,0 +1,10 @@
+package widgets
+
+// Ping and Pong live in two files that call each other.
+templ Ping(label string) {
+	<p class="ping">@Pong(label)</p>
+}
+
+templ Dot() {
+	<span class="dot">.</span>
+}

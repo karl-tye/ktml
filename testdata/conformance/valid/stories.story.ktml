@@ -1,0 +1,31 @@
+import { Card } from "./card.ktml"
+
+fixture report: TrustedURL = "/reports/42"
+fixture payload: JSON = `{"id": 7, "tags": ["a"]}`
+
+story Card.Running [
+	title = "Run",
+	score = 4.5,
+	open = true,
+	note = None,
+	link = report,
+	progress = Running [callId = "c", step = 2,],
+	idle = Idle [],
+	stages = [recording = Done, transcription = Active],
+	tags = ["a", "b"],
+	rows = [[label = "a", note = None], [label = "b"]],
+	notes = [],
+] {
+	"Body"
+	slot footer {
+		span "Footer"
+	}
+}
+
+story Card.Bare
+
+story Card.Only {
+	p "Only a body"
+}
+
+story Card.Args [title = "Args"]

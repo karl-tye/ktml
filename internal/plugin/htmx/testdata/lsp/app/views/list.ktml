@@ -1,0 +1,3 @@
+VendorList() {
+	form hx-post="/vendors/{id}/approve" hx-target="this" {}
+}

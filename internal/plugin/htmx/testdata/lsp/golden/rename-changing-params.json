@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": -32803,
+    "message": "a route rename must keep the path parameters [id] of /vendors/{id}/approve in order, but /vendors/{vendorID}/approve has [vendorID]; handlers read parameters by name"
+  },
+  "id": 1,
+  "jsonrpc": "2.0"
+}

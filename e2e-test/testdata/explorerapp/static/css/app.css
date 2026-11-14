@@ -1,0 +1,4 @@
+/* A stand-in for the bookshop's Tailwind build output: just the colours the
+   stories check. */
+.text-red { color: rgb(178, 34, 52); }
+.text-green { color: rgb(46, 125, 50); }

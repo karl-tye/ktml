@@ -1,0 +1,278 @@
+// The reader reviews dashboard of the bookshop's back office.
+import { PageView, DashboardView, NewReviewFormView, NewReviewFormBookseller, ReviewsGridView, ReviewsGridReview, ReviewCardView, StarRatingView, StarRatingStar } from "./reviews.ktmlschema"
+import { ListLoadingState, ManagementListShell, RowActions } from "../ui/list.ktml"
+
+// Page is the reviews page.
+Page [view: PageView] {
+	Dashboard view="{view.dashboard}"
+}
+
+// Dashboard shows one month of reviews; the month links swap it in place.
+Dashboard [view: DashboardView] {
+	ManagementListShell id="reviews-dashboard" {
+		div class="flex items-center justify-between gap-4 border-b border-surface0 bg-base px-6 py-5" {
+			div {
+				p class="text-xs font-semibold uppercase tracking-widest text-blue" "Larkspur Books"
+				h1 class="mt-1 text-2xl font-bold text-text" "Reader Reviews - {view.month} {view.year}"
+			}
+			nav class="flex gap-2" aria-label="Months" {
+				a (
+					href="{view.previousMonthHref}"
+					hx-get="{view.previousMonthHref}"
+					hx-target="#reviews-dashboard"
+					hx-swap="outerHTML"
+					hx-push-url="true"
+					class="rounded-md border border-surface1 px-3 py-2 text-sm text-text hover:bg-surface0"
+				) "Earlier"
+				" "
+				a (
+					href="{view.nextMonthHref}"
+					hx-get="{view.nextMonthHref}"
+					hx-target="#reviews-dashboard"
+					hx-swap="outerHTML"
+					hx-push-url="true"
+					class="rounded-md border border-surface1 px-3 py-2 text-sm text-text hover:bg-surface0"
+				) "Later"
+			}
+		}
+		div class="space-y-8 py-6" {
+			NewReviewForm view="{view.newReviewForm}"
+			ReviewsGrid view="{view.reviewsGrid}"
+			ListLoadingState label="Fetching reviews..."
+		}
+	}
+}
+
+// NewReviewForm records a review a reader left in the shop.
+NewReviewForm [view: NewReviewFormView] {
+	section class="mx-6 rounded-md border border-surface0 bg-mantle p-5" {
+		h2 class="mb-4 text-base font-semibold text-text" "Record a review"
+		form (
+			id="review-form"
+			hx-post="/reviews/"
+			hx-target="#reviews-list"
+			hx-swap="outerHTML"
+			hx-target-error="#form-messages"
+			hx-indicator:append="#save-review"
+			class="grid gap-4"
+		) {
+			input type="hidden" name="month" value="{view.month}"
+			" "
+			input type="hidden" name="year" value="{view.year}"
+			" "
+			input type="hidden" name="filter_bookseller" value="{view.booksellerID}"
+			div id="form-messages"
+			div class="grid gap-4 sm:grid-cols-2" {
+				label class="block text-sm text-text" {
+					"Reader"
+					input (
+						type="text"
+						name="reader"
+						required
+						class="mt-1 w-full rounded-md border border-surface1 bg-base px-3 py-2 text-text focus:border-blue focus:outline-none"
+						placeholder="Who wrote the review?"
+					)
+				}
+				if view.canChooseBookseller {
+					label class="block text-sm text-text" {
+						"Recommended by"
+						select (
+							name="bookseller_id"
+							required
+							class="mt-1 w-full rounded-md border border-surface1 bg-base px-3 py-2 text-text focus:border-blue focus:outline-none"
+						) {
+							option value="" "Choose a bookseller"
+							" "
+							for bookseller in view.booksellers key bookseller.key {
+								option value="{bookseller.id}" selected="{bookseller.selected}" "{bookseller.name}"
+							}
+						}
+					}
+				} else {
+					input type="hidden" name="bookseller_id" value="{view.actorID}"
+				}
+			}
+			div class="grid gap-4 sm:grid-cols-3" {
+				label class="block text-sm text-text sm:col-span-2" {
+					"Book title"
+					input (
+						type="text"
+						name="book_title"
+						required
+						class="mt-1 w-full rounded-md border border-surface1 bg-base px-3 py-2 text-text focus:border-blue focus:outline-none"
+					)
+				}
+				label class="block text-sm text-text" {
+					"Stars"
+					select (
+						name="stars"
+						required
+						class="mt-1 w-full rounded-md border border-surface1 bg-base px-3 py-2 text-text focus:border-blue focus:outline-none"
+					) {
+						option value="5" "5 - loved it"
+						" "
+						option value="4" "4 - liked it"
+						" "
+						option value="3" "3 - it was fine"
+						" "
+						option value="2" "2 - not for me"
+						" "
+						option value="1" "1 - gave up"
+					}
+				}
+			}
+			label class="block text-sm text-text" {
+				"Received on"
+				input (
+					type="date"
+					name="received_on"
+					required
+					max="{view.latestDate}"
+					class="mt-1 w-full rounded-md border border-surface1 bg-base px-3 py-2 text-text focus:border-blue focus:outline-none"
+				)
+			}
+			label class="block text-sm text-text" {
+				"Review"
+				textarea (
+					name="text"
+					required
+					rows="4"
+					class="mt-1 w-full rounded-md border border-surface1 bg-base px-3 py-2 text-text focus:border-blue focus:outline-none"
+					placeholder="Copy the review as the reader wrote it."
+				)
+			}
+			div class="flex justify-end gap-3" {
+				button (
+					type="reset"
+					@click="document.getElementById('form-messages').replaceChildren()"
+					class="rounded-md px-4 py-2 text-sm text-subtext1 hover:bg-surface0"
+				) "Start over"
+				" "
+				button (
+					type="submit"
+					id="save-review"
+					class="rounded-md bg-blue px-5 py-2 text-sm font-semibold text-crust hover:bg-sky disabled:opacity-50"
+				) "Save review"
+			}
+		}
+	}
+}
+
+// ReviewsGrid lists the month's reviews, or says there are none yet.
+ReviewsGrid [view: ReviewsGridView] {
+	section id="reviews-list" class="grid gap-4 px-6 sm:grid-cols-2 xl:grid-cols-3" {
+		header class="flex items-baseline justify-between sm:col-span-2 xl:col-span-3" {
+			h2 class="text-base font-semibold text-text" "This month"
+			span class="text-sm text-subtext1" "{view.reviewCount} reviews"
+		}
+		if view.noReviews {
+			emptyReviewsState
+		} else {
+			for review in view.reviews key review.key {
+				ReviewCard view="{review.reviewCard}"
+			}
+		}
+	}
+}
+
+// emptyReviewsState is shown for a month without reviews.
+emptyReviewsState {
+	div class="rounded-md border border-dashed border-surface1 py-10 text-center sm:col-span-2 xl:col-span-3" {
+		i class="fas fa-book-open mb-3 text-3xl text-surface2"
+		p class="font-medium text-text" "Nothing on the shelf yet"
+		p class="text-sm text-subtext1" "Reviews you record for this month appear here."
+	}
+}
+
+// ReviewCard shows one review with its moderation actions.
+ReviewCard [view: ReviewCardView] {
+	article (
+		id="review-{view.reviewID}"
+		class="flex flex-col gap-3 rounded-md border border-surface0 bg-base p-4"
+	) {
+		header class="flex items-start justify-between gap-3" {
+			div {
+				h3 class="font-semibold text-text" "{view.bookTitle}"
+				p class="text-sm text-subtext1" "Reviewed by {view.reader}"
+			}
+			div class="text-right" {
+				starRating view="{view.starRating}"
+				time class="text-xs text-subtext0" "{view.reviewDate}"
+			}
+		}
+		blockquote class="text-sm italic leading-relaxed text-subtext1" "{view.text}"
+		footer class="mt-auto flex items-center justify-between gap-3 border-t border-surface0 pt-3" {
+			div class="flex items-center gap-3" {
+				if view.published {
+					span class="text-xs font-medium text-green" {
+						i class="fas fa-globe mr-1"
+						" On the website"
+					}
+					" "
+				} else {
+					span class="text-xs font-medium text-yellow" {
+						i class="fas fa-hourglass-half mr-1"
+						" Awaiting a manager"
+					}
+					" "
+				}
+				if view.canPublish {
+					form {
+						input type="hidden" name="month" value="{view.month}"
+						" "
+						input type="hidden" name="year" value="{view.year}"
+						" "
+						input type="hidden" name="bookseller" value="{view.booksellerID}"
+						" "
+						button (
+							hx-post="/reviews/{view.reviewID}/approve"
+							hx-target="closest article"
+							hx-swap="outerHTML"
+							class="rounded-md bg-green px-3 py-1 text-xs font-semibold text-crust hover:bg-green/90"
+						) "Publish"
+					}
+				}
+			}
+			if view.canDelete {
+				RowActions {
+					form (
+						hx-delete="/reviews/{view.reviewID}"
+						hx-target="#reviews-list"
+						hx-swap="outerHTML"
+						hx-confirm="Remove this review from the shop's records?"
+					) {
+						input type="hidden" name="month" value="{view.month}"
+						" "
+						input type="hidden" name="year" value="{view.year}"
+						" "
+						input type="hidden" name="bookseller" value="{view.booksellerID}"
+						" "
+						button (
+							type="submit"
+							class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium text-red hover:bg-red/10"
+						) {
+							i class="fas fa-trash"
+							"Remove"
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// starRating draws five stars, filled up to the rating.
+starRating [view: StarRatingView] {
+	div class="flex items-center gap-0.5" aria-label="{view.ratingLabel} out of 5" {
+		for star in view.stars key star.key {
+			if star.filled {
+				i class="fas fa-star text-sm text-yellow"
+				" "
+			} else {
+				i class="far fa-star text-sm text-subtext0"
+				" "
+			}
+		}
+		span class="ml-1 text-xs text-subtext1" "{view.ratingLabel}"
+	}
+}

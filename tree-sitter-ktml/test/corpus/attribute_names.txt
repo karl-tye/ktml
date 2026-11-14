@@ -1,0 +1,201 @@
+==================
+Framework attribute names
+==================
+
+Panel [] {
+  button @click.outside="open = false" :class="c" x-on:keydown.enter="go()" hx-on::after-request="r()"
+  div x-transition.opacity.duration.100ms @dragover.prevent
+  label if:x="1" for.y="2"
+  slot x:y="z"
+  div (:class="c"
+    @click="x")
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list)
+    (element_body
+      (element
+        (identifier)
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal)))
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal)))
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal)))
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal))))
+      (element
+        (identifier)
+        (attribute
+          (attribute_name))
+        (attribute
+          (attribute_name)))
+      (element
+        (identifier)
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal)))
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal))))
+      (element
+        (identifier)
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal))))
+      (element
+        (identifier)
+        (attribute_group
+          (attribute
+            (attribute_name)
+            (attribute_value
+              (string_literal)))
+          (attribute
+            (attribute_name)
+            (attribute_value
+              (string_literal))))))))
+
+==================
+Colon chain is not an attribute
+:error
+==================
+
+Panel [] {
+  a:href="/x"
+}
+
+---
+
+
+
+==================
+Adjacent at-name after a value is not an attribute
+:error
+==================
+
+Panel [] {
+  div a="x"@click="y"
+}
+
+---
+
+
+
+==================
+Doctype and HTML comments
+==================
+
+Layout [] {
+  <!-- top {not} -->
+  doctype html
+  html lang="en" <!-- same line -->
+  div {
+    <!--
+      multi -- line --->
+  }
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list)
+    (element_body
+      (html_comment)
+      (doctype
+        name: (identifier))
+      (element
+        name: (identifier)
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (string_literal))))
+      (html_comment)
+      (element
+        name: (identifier)
+        child: (element_body
+          (html_comment))))))
+
+==================
+Doctype requires a name on its line
+:error
+==================
+
+Layout [] {
+  doctype
+  html
+}
+
+---
+
+
+
+==================
+Top-level doctype is not a declaration
+:error
+==================
+
+doctype html
+Layout [] {}
+
+---
+
+
+
+==================
+Unterminated HTML comment
+:error
+==================
+
+Layout [] {
+  <!-- open
+}
+
+---
+
+
+
+==================
+Star in attribute names
+==================
+
+Contractor [] {
+  form hx-target-4*="#errors" hx-target-*="#all" {}
+}
+
+---
+
+(source_file
+  (component_definition
+    (identifier)
+    (parameter_list)
+    (element_body
+      (element
+        (identifier)
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (interpolated_string
+              (interpolation_literal))))
+        (attribute
+          (attribute_name)
+          (attribute_value
+            (interpolated_string
+              (interpolation_literal))))
+        (element_body)))))

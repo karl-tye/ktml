@@ -1,0 +1,9 @@
+Tab [current: boolean, note?: string, six: boolean] {
+	a (
+		href="/x"
+		if current { aria-current="page" #now } else if note? { title="{note}" } else { data-off }
+		if:x="1"
+		if="2"
+	) "x"
+	option (value="6" if !six && current { selected if note? { title="n" } }) "6"
+}

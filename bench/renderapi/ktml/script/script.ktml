@@ -1,0 +1,20 @@
+import { Link } from "./script.ktmlschema"
+
+// ScriptLinks is the part of the ADR-0003 ScriptHeavy benchmark that the
+// compiler supports: URL and TrustedURL attributes and high-escape text in a
+// keyed list. The ScriptHeavy component around it needs JSONValue and
+// TrustedScript, which the compiler does not lower yet, so it is hand-lowered
+// in each API tree (script/script_hand.go).
+ScriptLinks [title: string, summary: string, links: [Link]] {
+	h2 class="lecturenotes-title" "{title}"
+	p class="summary" "{summary}"
+	ul class="links" {
+		for link in links key link.id {
+			li class="link" {
+				a href="{link.href}" title="{link.title}" "{link.label}"
+				a (class="download" href="{link.download}" download) "Download"
+				p class="description" "{link.description}"
+			}
+		}
+	}
+}

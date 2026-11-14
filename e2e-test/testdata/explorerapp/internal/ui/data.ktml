@@ -1,0 +1,31 @@
+// Table cells and small data helpers.
+
+// TH is a column header.
+TH [header: string] {
+	th sortable class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-subtext1 sm:px-6" "{header}"
+}
+
+// TR is a table row the table's filter can hide.
+TR [children?: content] {
+	tr class="transition-colors hover:bg-surface0/50" filterable {
+		children
+	}
+}
+
+// TD is a table cell that stacks its children.
+TD [children?: content] {
+	td class="px-4 py-4 sm:px-6" {
+		div class="flex flex-col" {
+			children
+		}
+	}
+}
+
+// Span is plain text.
+Span [str: string] {
+	span "{str}"
+}
+
+// Empty renders nothing.
+Empty {
+}

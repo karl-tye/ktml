@@ -1,0 +1,30 @@
+import { Card, Frame } from "../ui/ui.ktml"
+
+Page [heading: string, note?: string] {
+	main {
+		Frame {
+			Card title="{heading}" subtitle="<{heading}>" count=3 {
+				Panel label="inner" {
+					p "body & more"
+				}
+				slot actions {
+					button type="button" "Save"
+				}
+			}
+		}
+		Panel label="{heading}"
+		if note? {
+			Note text="{note}"
+		}
+	}
+}
+
+Panel [label: string, children?: content] {
+	div class="panel" aria-label="{label}" {
+		children
+	}
+}
+
+Note [text: string] {
+	small "{text}"
+}

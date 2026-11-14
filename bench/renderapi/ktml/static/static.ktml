@@ -1,0 +1,99 @@
+// Static is the ADR-0003 Static benchmark: a page of about 4 KiB with no
+// inputs, so the whole body coalesces into constant writes.
+Static {
+	html lang="en" {
+		head {
+			meta charset="UTF-8"
+			meta name="viewport" content="width=device-width, initial-scale=1.0"
+			title "Kettlewick Cycle Works - Workshop Overview"
+			link rel="stylesheet" href="/static/css/main.css"
+			link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml"
+		}
+		body class="min-h-screen bg-mantle text-text antialiased" {
+			header class="sticky top-0 z-40 border-b border-surface0 bg-base/95 backdrop-blur" {
+				nav class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3" aria-label="Primary" {
+					a href="/" class="flex items-center gap-2 text-lg font-semibold text-text" {
+						img src="/static/img/logo.svg" alt="Kettlewick Cycle Works" width="32" height="32"
+						span "Kettlewick Cycle Works"
+					}
+					ul class="hidden items-center gap-6 text-sm font-medium md:flex" {
+						li {
+							a href="/services" class="text-subtext0 hover:text-text" "Services"
+						}
+						li {
+							a href="/bikes" class="text-subtext0 hover:text-text" "Bikes we fix"
+						}
+						li {
+							a href="/pricing" class="text-subtext0 hover:text-text" "Pricing"
+						}
+						li {
+							a href="/contact" class="rounded-lg bg-blue px-3 py-2 text-base hover:bg-blue/90" "Book a service"
+						}
+					}
+				}
+			}
+			main class="mx-auto max-w-6xl px-4 py-10" {
+				section class="grid gap-8 md:grid-cols-2 md:items-center" {
+					div {
+						h1 class="text-4xl font-bold tracking-tight text-text" "Bikes serviced properly, the first time"
+						p class="mt-4 text-lg text-subtext0" "Trained mechanics for road, gravel, commuter, and electric bikes, from a quick tune-up to a full rebuild. Fixed workshop prices, with no surprises at collection."
+						div class="mt-6 flex flex-wrap gap-3" {
+							a href="/contact" class="rounded-lg bg-blue px-4 py-2 font-semibold text-base hover:bg-blue/90" "Request a quote"
+							a href="tel:+441234567890" class="rounded-lg border border-surface1 px-4 py-2 font-semibold hover:bg-surface0" "Call 01234 567890"
+						}
+					}
+					figure class="overflow-hidden rounded-xl border border-surface0 bg-base shadow-xl" {
+						img src="/static/img/hero.webp" alt="A mechanic truing a wheel" width="640" height="420" loading="lazy"
+					}
+				}
+				section class="mt-16" aria-labelledby="services-heading" {
+					h2 id="services-heading" class="text-2xl font-bold text-text" "What we do"
+					div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" {
+						article class="rounded-xl border border-surface0 bg-base p-5" {
+							h3 class="font-semibold text-text" "Tune-ups"
+							p class="mt-2 text-sm text-subtext0" "Gears, brakes, cables, and a safety check, ready the same day."
+						}
+						article class="rounded-xl border border-surface0 bg-base p-5" {
+							h3 class="font-semibold text-text" "Wheels"
+							p class="mt-2 text-sm text-subtext0" "Truing, spoke repairs, tubeless setups, and hub servicing."
+						}
+						article class="rounded-xl border border-surface0 bg-base p-5" {
+							h3 class="font-semibold text-text" "E-bikes"
+							p class="mt-2 text-sm text-subtext0" "Battery health checks, motor diagnostics, and firmware updates."
+						}
+					}
+				}
+				section class="mt-16 rounded-xl border border-surface0 bg-base p-6" aria-labelledby="steps-heading" {
+					h2 id="steps-heading" class="text-2xl font-bold text-text" "How it works"
+					ol class="mt-4 grid gap-4 md:grid-cols-2" {
+						li class="rounded-lg bg-surface0/40 p-4" {
+							strong class="block text-text" "1. Tell us about your bike"
+							span class="text-sm text-subtext0" "Book online or by phone in under two minutes."
+						}
+						li class="rounded-lg bg-surface0/40 p-4" {
+							strong class="block text-text" "2. Get a fixed price"
+							span class="text-sm text-subtext0" "We confirm the price before any work starts."
+						}
+					}
+				}
+			}
+			footer class="border-t border-surface0 bg-base" {
+				div class="mx-auto grid max-w-6xl gap-6 px-4 py-8 text-sm text-subtext0 md:grid-cols-3" {
+					div {
+						p class="font-semibold text-text" "Kettlewick Cycle Works Ltd"
+						p "A fictional business, company number 00000000."
+					}
+					ul class="space-y-1" {
+						li {
+							a href="/privacy" class="hover:text-text" "Privacy policy"
+						}
+						li {
+							a href="/terms" class="hover:text-text" "Terms of service"
+						}
+					}
+					p class="md:text-right" "Open Tuesday to Saturday, 9am to 5pm."
+				}
+			}
+		}
+	}
+}

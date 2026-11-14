@@ -1,0 +1,13 @@
+{
+  "resolution": {
+    "generate": "go"
+  },
+  "dev": {
+    "port": 3000,
+    "proxy_target": "http://127.0.0.1:8080",
+    "build": ["go", "build", "-tags", "ktmldev", "-o", "{binary}", "./cmd/server"],
+    "command": ["{binary}", "-addr", "127.0.0.1:8080"],
+    "watch": ["*.ktml", "*.ktmlschema"],
+    "restart_watch": ["*.go"]
+  }
+}

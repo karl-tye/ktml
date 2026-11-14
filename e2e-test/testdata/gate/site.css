@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+/* Larkspur Books back office. Two themes, "paper" (light) and "ink"
+   (dark), set the same channel variables; the @theme colours read them, so
+   every utility such as bg-surface0 or text-subtext1 follows the theme. */
+
+@utility paper {
+    --shade-red: 178, 34, 52;
+    --shade-yellow: 191, 135, 0;
+    --shade-green: 46, 125, 50;
+    --shade-sky: 2, 136, 209;
+    --shade-blue: 40, 53, 147;
+    --shade-text: 33, 29, 24;
+    --shade-subtext1: 74, 66, 56;
+    --shade-subtext0: 107, 98, 86;
+    --shade-surface2: 170, 160, 144;
+    --shade-surface1: 204, 195, 179;
+    --shade-surface0: 229, 222, 208;
+    --shade-base: 252, 249, 242;
+    --shade-mantle: 245, 240, 229;
+    --shade-crust: 236, 229, 214;
+}
+
+@utility ink {
+    --shade-red: 239, 120, 128;
+    --shade-yellow: 240, 200, 110;
+    --shade-green: 140, 205, 140;
+    --shade-sky: 120, 200, 240;
+    --shade-blue: 150, 165, 250;
+    --shade-text: 236, 232, 224;
+    --shade-subtext1: 206, 200, 190;
+    --shade-subtext0: 170, 164, 154;
+    --shade-surface2: 92, 88, 84;
+    --shade-surface1: 66, 63, 60;
+    --shade-surface0: 46, 44, 42;
+    --shade-base: 24, 23, 22;
+    --shade-mantle: 19, 18, 17;
+    --shade-crust: 14, 13, 12;
+}
+
+@theme {
+    --color-red: rgba(var(--shade-red));
+    --color-yellow: rgba(var(--shade-yellow));
+    --color-green: rgba(var(--shade-green));
+    --color-sky: rgba(var(--shade-sky));
+    --color-blue: rgba(var(--shade-blue));
+    --color-text: rgba(var(--shade-text));
+    --color-subtext1: rgba(var(--shade-subtext1));
+    --color-subtext0: rgba(var(--shade-subtext0));
+    --color-surface2: rgba(var(--shade-surface2));
+    --color-surface1: rgba(var(--shade-surface1));
+    --color-surface0: rgba(var(--shade-surface0));
+    --color-base: rgba(var(--shade-base));
+    --color-mantle: rgba(var(--shade-mantle));
+    --color-crust: rgba(var(--shade-crust));
+}
+
+:root {
+    color-scheme: light;
+    @apply paper;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        color-scheme: dark;
+        @apply ink;
+    }
+}
+
+html.paper {
+    color-scheme: light;
+    @apply paper;
+}
+
+html.ink {
+    color-scheme: dark;
+    @apply ink;
+}
+
+[x-cloak] { display: none !important; }
+
+#reviews-dashboard.htmx-request {
+    opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition: none !important;
+    }
+}

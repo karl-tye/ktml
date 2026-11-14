@@ -1,0 +1,19 @@
+// Host Schema records
+record Address [
+	city: string,
+	zip?: string,
+]
+
+record User [
+	id: integer,
+	name: string,
+	verified?: boolean,
+	score: number,
+	address: Address,
+	tags: [string],
+	history: [[Address]],
+]
+
+record Empty []
+
+record Inline [label: string]

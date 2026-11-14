@@ -1,0 +1,49 @@
+// Stories for the reviews grid: an empty month and a month of cards.
+import { ReviewsGrid } from "./ui.ktml"
+
+story ReviewsGrid.Several [
+	view = [
+		reviewCount = 2,
+		noReviews = false,
+		reviews = [
+			[
+				key = "r1",
+				reviewCard = [
+					reviewID = "r1",
+					reader = "Ada Lovelace",
+					bookTitle = "The Difference Engine",
+					starRating = [stars = [[key = 1, filled = true], [key = 2, filled = true], [key = 3, filled = false]], ratingLabel = "2.0"],
+					reviewDate = "12 Oct 2026",
+					text = "Clever, if slow to start.",
+					published = true,
+					canPublish = true,
+					month = "10",
+					year = "2026",
+					booksellerID = "",
+					canDelete = true,
+				],
+			],
+			[
+				key = "r2",
+				reviewCard = [
+					reviewID = "r2",
+					reader = "Alan Turing",
+					bookTitle = "A Book of Ferns",
+					starRating = [stars = [[key = 1, filled = true]], ratingLabel = "1.0"],
+					reviewDate = "13 Oct 2026",
+					text = "Fewer ferns than promised.",
+					published = false,
+					canPublish = false,
+					month = "10",
+					year = "2026",
+					booksellerID = "",
+					canDelete = false,
+				],
+			],
+		],
+	],
+]
+
+story ReviewsGrid.Empty [
+	view = [reviewCount = 0, noReviews = true, reviews = []],
+]

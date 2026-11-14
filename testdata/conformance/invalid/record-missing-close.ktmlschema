@@ -1,0 +1,6 @@
+record User [
+	id: string,
+
+record Item [
+	name: string,
+]

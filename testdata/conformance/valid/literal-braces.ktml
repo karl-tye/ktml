@@ -1,0 +1,1 @@
+Page { body x-data="{ filtersOpen: false }" { `literal {name}` } }

@@ -1,0 +1,257 @@
+// List chrome shared by the back-office pages: the shell, section tabs,
+// filters, paging, empty and loading states, and row actions.
+import { SectionTabsView, SectionTabsTab, FilterFormView, MultiSelectFilterView, MultiSelectFilterOption, PageNavigationView, TableEmptyStateView, RowDialogActionView, ListExampleView, ListStatesExampleView } from "./ui.ktmlschema"
+
+// ManagementListShell frames a list page; its id is the target its
+// filters and paging swap.
+ManagementListShell [id: string, children?: content] {
+	section (
+		id="{id}"
+		class="relative flex min-h-0 flex-1 flex-col bg-base"
+	) {
+		children
+	}
+}
+
+// SectionTabs links the sections of a list, swapping the list in place.
+SectionTabs [view: SectionTabsView] {
+	if view.hasTabs {
+		nav (
+			aria-label="{view.label}"
+			class="overflow-x-auto border-b border-surface0 px-4 pt-2"
+		) {
+			ul class="flex min-w-max gap-5" {
+				for tab in view.tabs key tab.key {
+					li {
+						a (
+							href="{tab.href}"
+							hx-get="{tab.fragmentHref}"
+							hx-target="{view.target}"
+							hx-swap="outerHTML show:top"
+							hx-push-url="{tab.pushURL}"
+							class="{tab.class}"
+							if tab.active { aria-current="page" }
+						) {
+							"{tab.label} "
+							if tab.hasCount {
+								span class="ml-1 rounded-full bg-surface0 px-2 text-xs tabular-nums" "{tab.count}"
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// FilterForm reloads its list when a search or filter changes.
+FilterForm [view: FilterFormView, children?: content] {
+	form (
+		hx-get="{view.action}"
+		hx-target="{view.target}"
+		hx-swap="outerHTML"
+		hx-push-url="true"
+		hx-trigger="input changed delay:400ms from:input[type='search'], change from:select, change from:input[type='checkbox']"
+		class="flex flex-wrap items-end gap-3 px-4 py-3"
+	) {
+		children
+	}
+}
+
+// MultiSelectFilter is a drop-down of checkboxes that counts its choices.
+MultiSelectFilter [view: MultiSelectFilterView] {
+	details (
+		class="group relative min-w-40"
+		x-data="{view.alpineState}"
+	) {
+		summary class="flex min-h-10 cursor-pointer list-none items-center justify-between gap-2 rounded-md border border-surface1 bg-base px-3 text-sm text-text" {
+			span (
+				x-text="chosen === 0 ? $el.dataset.allLabel : chosen + ' chosen'"
+				data-all-label="{view.allLabel}"
+			) "{view.summary}"
+			" "
+			i (
+				class="fas fa-caret-down text-xs text-subtext0 group-open:rotate-180"
+				aria-hidden="true"
+			)
+		}
+		fieldset class="absolute left-0 top-full z-30 mt-1 max-h-72 min-w-full overflow-y-auto rounded-md border border-surface1 bg-base p-2 shadow-lg" {
+			legend class="sr-only" "{view.allLabel}"
+			" "
+			for option in view.options key option.key {
+				label class="flex min-h-10 cursor-pointer items-center gap-2 rounded px-2 text-sm text-text hover:bg-surface0" {
+					input (
+						type="checkbox"
+						name="{view.name}"
+						value="{option.value}"
+						checked="{option.checked}"
+						@change="chosen += $event.target.checked ? 1 : -1"
+						class="size-4 rounded border-surface1 text-blue"
+					)
+					" "
+					span "{option.label}"
+				}
+			}
+		}
+	}
+}
+
+// TableFrame scrolls a wide table sideways.
+TableFrame [children?: content] {
+	div class="overflow-x-auto" {
+		children
+	}
+}
+
+// ManagementTableFrame scrolls a table inside a list page.
+ManagementTableFrame [children?: content] {
+	div class="min-h-0 flex-1 overflow-auto" {
+		children
+	}
+}
+
+// PageNavigation shows where the page sits in the list and links to the
+// pages either side.
+PageNavigation [view: PageNavigationView] {
+	nav (
+		aria-label="{view.label}"
+		class="flex shrink-0 items-center justify-between gap-3 border-t border-surface0 px-4 py-3"
+	) {
+		p class="text-xs tabular-nums text-subtext0" {
+			if view.isEmpty {
+				"Nothing to show"
+			} else {
+				span class="font-medium text-text" "{view.first}-{view.last}"
+				" "
+				if view.totalKnown {
+					"of "
+					span class="font-medium text-text" "{view.total}"
+				}
+			}
+		}
+		div class="flex items-center gap-2" {
+			if view.hasPrevious {
+				a (
+					href="{view.previousHref}"
+					hx-get="{view.previousHref}"
+					hx-target="{view.target}"
+					hx-swap="outerHTML show:top"
+					hx-push-url="true"
+					class="inline-flex h-8 items-center gap-1 rounded-md border border-surface1 px-3 text-xs text-text hover:text-blue"
+				) {
+					i class="fas fa-angle-left"
+					"Back"
+				}
+				" "
+			} else {
+				span (
+					aria-disabled="true"
+					class="inline-flex h-8 items-center gap-1 rounded-md border border-surface0 px-3 text-xs text-subtext0 opacity-50"
+				) {
+					i class="fas fa-angle-left"
+					"Back"
+				}
+				" "
+			}
+			if view.hasPageCount {
+				span class="text-xs tabular-nums text-subtext0" {
+					span class="text-text" "{view.current}"
+					" / {view.pageCount}"
+				}
+				" "
+			}
+			if view.hasNext {
+				a (
+					href="{view.nextHref}"
+					hx-get="{view.nextHref}"
+					hx-target="{view.target}"
+					hx-swap="outerHTML show:top"
+					hx-push-url="true"
+					class="inline-flex h-8 items-center gap-1 rounded-md border border-surface1 px-3 text-xs text-text hover:text-blue"
+				) {
+					"More"
+					i class="fas fa-angle-right"
+				}
+			} else {
+				span (
+					aria-disabled="true"
+					class="inline-flex h-8 items-center gap-1 rounded-md border border-surface0 px-3 text-xs text-subtext0 opacity-50"
+				) {
+					"More"
+					i class="fas fa-angle-right"
+				}
+			}
+		}
+	}
+}
+
+// TableEmptyState spans every column of an empty table.
+TableEmptyState [view: TableEmptyStateView] {
+	tr {
+		td colspan="{view.columns}" class="px-4 py-10 text-center text-subtext1" {
+			i class="fas mb-2 text-2xl text-surface2 {view.iconClass}"
+			p class="font-medium text-text" "{view.title}"
+			if view.hasDescription {
+				p class="text-sm text-subtext0" "{view.description}"
+			}
+		}
+	}
+}
+
+// ListLoadingState covers a list while HTMX fetches it again.
+ListLoadingState [label: string] {
+	div (
+		role="status"
+		class="htmx-indicator absolute inset-0 z-10 flex items-center justify-center gap-2 bg-base/70 text-sm text-subtext1"
+	) {
+		i class="fas fa-circle-notch animate-spin"
+		span "{label}"
+	}
+}
+
+// RowActions lines up a row's buttons at its end.
+RowActions [children?: content] {
+	div class="flex items-center justify-end gap-2" {
+		children
+	}
+}
+
+// RowDialogAction loads a row's details into the page's dialog.
+RowDialogAction [view: RowDialogActionView] {
+	button (
+		type="button"
+		hx-get="{view.href}"
+		hx-target="#app-dialog-content"
+		hx-swap="innerHTML"
+		class="{view.class}"
+	) "{view.label}"
+}
+
+// ListExample is a list page with tabs and paging.
+ListExample [view: ListExampleView] {
+	ManagementListShell id="{view.id}" {
+		SectionTabs view="{view.sectionTabs}"
+		" "
+		PageNavigation view="{view.pageNavigation}"
+	}
+}
+
+// ListStatesExample is a filtered list with nothing in it.
+ListStatesExample [view: ListStatesExampleView] {
+	FilterForm view="{view.filterForm}" {
+		input type="search" name="q" aria-label="Search titles"
+		" "
+		select name="shelf" aria-label="Shelf" {
+			option value="fiction" "Fiction"
+		}
+	}
+	table {
+		tbody {
+			TableEmptyState view="{view.tableEmptyState}"
+		}
+	}
+	ListLoadingState label="Fetching titles..."
+	RowActions {
+		a href="/titles/1" "Open"
+	}
+}

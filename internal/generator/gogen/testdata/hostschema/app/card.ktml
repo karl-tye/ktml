@@ -1,0 +1,15 @@
+import { User, Address } from "./user.ktmlschema"
+import { Badge } from "./badge.ktml"
+
+Where [place: Address] {
+	span "{place.city}"
+}
+
+Card [user: User, places: [Address], title?: string] {
+	article id="{user.id}" data-admin="{user.admin}" data-visits="{user.visits}" {
+		h2 "{user.name} <{user.owner.displayName}>"
+		Badge label="{user.name}" count="{user.visits}"
+		Badge label="static"
+		Where place="{user.address}"
+	}
+}

@@ -1,0 +1,98 @@
+import { Job, Board, JobStatus, Progress, Outcome, Grade, PageView, Header } from "./model.ktmlschema"
+
+BoardView [board: Board, progress: Progress, report?: TrustedURL, data: JSONValue, density: string = "normal"] {
+	section x-data="{data}" {
+		h2 "{board.title}"
+		if board.notes? {
+			p "{board.notes}"
+		}
+		if report? {
+			a href="{report}" "Report"
+		}
+		ul {
+			for job in board.jobs key job.id {
+				JobCard job="{job}"
+			}
+		}
+		ProgressLine progress="{progress}"
+	}
+}
+
+JobCard [job: Job] {
+	li data-id="{job.id}" {
+		a href="{job.link}" "{job.title}"
+		span "{job.customerName}"
+		if job.customerEmail? {
+			span "{job.customerEmail}"
+		}
+		span "{job.price} / {job.visits}"
+		if job.urgent {
+			strong "Urgent"
+		}
+		StatusLine status="{job.status}"
+	}
+}
+
+StatusLine [status: JobStatus]
+
+StatusLine [status = Open] {
+	span "Open"
+}
+
+StatusLine [status = Booked, engineerName, slot] {
+	span "{engineerName} at {slot}"
+}
+
+StatusLine [status = Closed, reason] {
+	span "Closed"
+}
+
+ProgressLine [progress: Progress]
+
+ProgressLine [progress = Idle] {
+	p "Idle"
+}
+
+ProgressLine [progress = Running, callId] {
+	p "Running {callId}"
+}
+
+ProgressLine [progress = Failed, message] {
+	p "Failed: {message}"
+}
+
+Panel [title: string, actions: content, children?: content] {
+	div {
+		h3 "{title}"
+		actions
+		children
+	}
+}
+
+Field [label: string, attrs: Attributes] {
+	input ...attrs
+}
+
+OutcomeLine [outcome: Outcome]
+
+OutcomeLine [outcome = Pending] {
+	p "Pending"
+}
+
+OutcomeLine [outcome = Done, grade] {
+	GradeLine grade="{grade}"
+}
+
+GradeLine [grade: Grade]
+
+GradeLine [grade = Pass] {
+	p "Pass"
+}
+
+GradeLine [grade = Fail] {
+	p "Fail"
+}
+
+JobPage [page: PageView] {
+	ProgressLine progress="{page.header.progress}"
+}

@@ -1,0 +1,17 @@
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": {
+    "range": {
+      "end": {
+        "character": 24,
+        "line": 17
+      },
+      "start": {
+        "character": 9,
+        "line": 17
+      }
+    },
+    "uri": "file://$APP/web/router.go"
+  }
+}

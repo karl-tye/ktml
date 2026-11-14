@@ -1,0 +1,23 @@
+// Stories for small ui primitives.
+import { Badge } from "./form.ktml"
+import { Banner } from "./ui.ktml"
+
+fixture alwaysShown: TrustedScript = "true"
+
+story Badge.Plain [
+	view = [badgeClass = "inline-flex rounded-full border border-green px-2 text-xs text-green", text = "Approved"],
+]
+
+story Badge.WithIcon [
+	view = [badgeClass = "inline-flex rounded-full border border-red px-2 text-xs text-red", text = "Overdue"],
+] {
+	slot icon {
+		i class="fas fa-clock"
+	}
+}
+
+story Banner.Warning [
+	view = [visibleWhen = alwaysShown, toneClass = "bg-yellow/10 border-yellow text-yellow"],
+] {
+	"The stock count is out of date."
+}

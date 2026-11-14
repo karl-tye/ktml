@@ -1,0 +1,20 @@
+// Framework attribute names, the doctype, and HTML comments.
+Layout [] {
+	<!-- page shell -->
+	doctype html
+	html lang="en" {
+		body (
+			x-data
+			hx-ext:inherited="sse"
+			@keydown.slash.window="focus()"
+		) {
+			<!--
+				multi -- line {not}
+			--->
+			button @click.outside="open = false" :class="c" x-on:keydown.enter="go()" hx-on::after-request="r()"
+			div x-transition.opacity.duration.100ms @dragover.prevent <!-- same line -->
+			label if:x="1" for.y="2"
+			slot x:y="z"
+		}
+	}
+}

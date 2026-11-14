@@ -1,0 +1,90 @@
+// Payment lifecycle of the Fernhill Teas online shop: a staff back-office
+// order panel and the public subscription checkout. Go presenters derive
+// these values; templates only select a Variant and render its payload.
+
+record Money [
+	display: string,
+]
+
+// A recorded acceptance of the checkout's subscription terms.
+record TermsAcceptance [
+	acceptedAt: string,
+]
+
+// The public checkout page. Go derives the facts a template would otherwise
+// compute inline: whether card checkout applies, whether tea club membership
+// is required, and whether the terms were accepted.
+record OrderSummary [
+	reference: string,
+	summary: string,
+	dueNow: Money,
+	firstBox: Money,
+	monthly: Money,
+	version: integer,
+	membershipRequired: boolean,
+	acceptance?: TermsAcceptance,
+	cardCheckout: boolean,
+	checkoutId: string,
+	token: string,
+]
+
+// The staff order payment panel. Each Variant carries only the data its SSR
+// shape renders, so a pending panel cannot show a retry action and a confirmed
+// panel cannot lack its Shipment link.
+state StaffPayment {
+	NotDue,
+	Payable [
+		amount: Money,
+		cardAction: URL,
+		checkoutLink: URL,
+	],
+	Confirming [
+		paymentId: string,
+		label: string,
+		title: string,
+		detail: string,
+		statusLink: URL,
+	],
+	Retryable [
+		label: string,
+		title: string,
+		detail: string,
+		actionLabel: string,
+		retryLink: URL,
+	],
+	Blocked [
+		label: string,
+		title: string,
+		detail: string,
+	],
+	Confirmed [
+		amount: Money,
+		shipmentReference: string,
+		shipmentLink: URL,
+	],
+}
+
+// The public checkout result. External Tessera Pay 3DS URLs are TrustedURL:
+// Go validates their host before constructing them.
+state PublicPayment {
+	Confirming [
+		reference: string,
+		statusLink: URL,
+	],
+	DeviceData [
+		action: TrustedURL,
+		bin: string,
+		jwt: string,
+	],
+	Challenge [
+		action: TrustedURL,
+		jwt: string,
+	],
+	NotCompleted [
+		reference: string,
+		returnLink: URL,
+	],
+	Confirmed [
+		reference: string,
+	],
+}

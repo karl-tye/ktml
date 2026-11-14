@@ -1,0 +1,24 @@
+Panel [fee: Money] {
+	div id="a"
+	div id="b"
+	FeeAmount fee="{fee}"
+	PaymentNote
+	input required disabled
+	p class="x" // a comment ends the line
+	"sibling text"
+	p class "value" "child"
+	form (
+		id="f"
+		// comments are whitespace inside the group
+		action="{fee.link}"
+		disabled
+		#main
+	) {
+		h2 "Take Payment"
+	}
+	button (
+		type="button"
+	) "Back"
+	div ()
+	label for="email" slot="title" if="x"
+}

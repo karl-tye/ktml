@@ -1,0 +1,176 @@
+// Page-level ui components: the shared dialog, buttons, cards, tabs, and
+// banners.
+import { PlusButtonView, TabsView, TabsTab, TabPanelView, BannerView, LazyTabView } from "./ui.ktmlschema"
+
+// Modal is a Dialog with a title bar and a close button.
+Modal [buttonContent?: content, title: string, children?: content] {
+	Dialog {
+		div class="flex h-full min-h-0 flex-col gap-5 p-5" {
+			div class="flex shrink-0 items-center justify-between" {
+				h3 class="text-lg font-semibold text-text" "{title}"
+				button (
+					type="button"
+					aria-label="Close"
+					onclick="document.getElementById('app-dialog').close()"
+					class="text-subtext1 hover:text-text"
+				) {
+					i class="fas fa-xmark"
+				}
+			}
+			div class="min-h-0 flex-1 overflow-y-auto" {
+				children
+			}
+		}
+		slot buttonContent {
+			buttonContent
+		}
+	}
+}
+
+// Dialog opens its children in the page's one dialog element when its
+// button content is clicked.
+Dialog [buttonContent?: content, children?: content] {
+	div x-data class="contents" {
+		template x-ref="body" {
+			children
+		}
+		div (
+			@click="\n            const dialog = document.getElementById('app-dialog');\n            const body = document.getElementById('app-dialog-content');\n            body.innerHTML = $refs.body.innerHTML;\n            htmx.process(body);\n            dialog.showModal();\n        "
+			class="contents"
+		) {
+			buttonContent
+		}
+	}
+}
+
+// LabelledDialogTrigger opens its template in the dialog and names the
+// dialog by the element labelledBy identifies.
+LabelledDialogTrigger [buttonContent?: content, labelledBy: string, children?: content] {
+	div (
+		class="contents"
+		data-dialog-label="{labelledBy}"
+		onclick=`const trigger = event.target.closest('button'); if (!trigger) return; const dialog = document.getElementById('app-dialog'); const body = document.getElementById('app-dialog-content'); const template = this.querySelector(':scope > template'); body.replaceChildren(template.content.cloneNode(true)); htmx.process(body); dialog.setAttribute('aria-labelledby', this.dataset.dialogLabel); dialog.showModal();`
+	) {
+		template {
+			children
+		}
+		buttonContent
+	}
+}
+
+// PlusButton is the add button of a list.
+PlusButton [view: PlusButtonView] {
+	button class="inline-flex items-center gap-2 rounded-md bg-blue px-4 py-2 text-sm font-semibold text-crust hover:bg-blue/90" {
+		i class="fas fa-plus"
+		" "
+		if view.hasText {
+			span "{view.text}"
+		}
+	}
+}
+
+// InfoCard is one figure on a summary page.
+InfoCard [title: string, value: string, class: string] {
+	div class="rounded-md border border-surface1 bg-base p-4 sm:p-5" {
+		h3 class="text-xs font-medium uppercase tracking-wide text-subtext0" "{title}"
+		p class="mt-2 text-2xl font-bold sm:text-3xl {class}" "{value}"
+	}
+}
+
+// Tabs shows one panel at a time. With a single tab it shows the panel
+// alone. Its tabs' contents are components, so Go joins them into panels
+// (TabPanel).
+Tabs [view: TabsView, panels?: content] {
+	if view.single {
+		div class="flex min-h-0 w-full flex-1 flex-col" {
+			div class="flex min-h-0 flex-1 flex-col" {
+				panels
+			}
+		}
+	} else if view.several {
+		div x-data="{view.alpineState}" class="flex min-h-0 w-full flex-1 flex-col" {
+			div role="tablist" class="flex w-full shrink-0 items-center gap-5 border-b border-surface0 px-5 pt-3" {
+				for tab in view.tabs key tab.key {
+					button (
+						type="button"
+						role="tab"
+						@click="{tab.choose}"
+						:class="{tab.activeClass}"
+						class="border-b-2 pb-2 text-sm font-medium transition-colors"
+					) "{tab.label}"
+				}
+			}
+			div class="flex min-h-0 flex-1 flex-col" {
+				panels
+			}
+		}
+	}
+}
+
+// TabPanel is one tab's content, shown while its tab is selected.
+TabPanel [view: TabPanelView, children?: content] {
+	div role="tabpanel" x-show="{view.visibleWhen}" class="flex min-h-0 flex-1 flex-col" {
+		children
+	}
+}
+
+// ModalHeader is the title bar of a dialog's content.
+ModalHeader [children?: content] {
+	div class="flex shrink-0 items-center justify-between gap-2 border-b border-surface0 bg-mantle p-4" {
+		div class="flex min-w-0 flex-1 items-center gap-3" {
+			children
+		}
+		button (
+			type="button"
+			aria-label="Close dialog"
+			onclick="this.closest('dialog').close()"
+			class="flex size-10 items-center justify-center rounded-md text-subtext0 hover:bg-surface1 hover:text-text"
+		) {
+			i class="fas fa-xmark"
+		}
+	}
+}
+
+// ModalFooter is the button bar of a dialog's content.
+ModalFooter [children?: content] {
+	div class="flex shrink-0 items-center justify-between border-t border-surface0 bg-mantle p-4" {
+		children
+	}
+}
+
+// Banner is a notice across the page, shown while its condition holds.
+Banner [view: BannerView, children?: content] {
+	div (
+		role="status"
+		x-show="{view.visibleWhen}"
+		x-cloak
+		class="flex items-start gap-3 border-b p-4 text-sm {view.toneClass}"
+	) {
+		i class="fas fa-circle-info mt-0.5"
+		div {
+			children
+		}
+	}
+}
+
+// LazyTab loads its content when it is first shown.
+LazyTab [view: LazyTabView] {
+	div class="flex h-full min-h-0 flex-1 flex-col" hx-get="{view.href}" hx-trigger="load" {
+		div class="flex flex-1 flex-col items-center justify-center py-12 text-subtext1" {
+			i class="fas fa-circle-notch mb-3 animate-spin text-3xl text-surface2"
+			p "{view.text}"
+		}
+	}
+}
+
+// WideModal widens the dialog until it closes.
+WideModal {
+	script ```
+		(function () {
+			const dialog = document.getElementById("app-dialog");
+			if (!dialog) return;
+			dialog.classList.add("max-w-[95vw]");
+			dialog.addEventListener("close", () => dialog.classList.remove("max-w-[95vw]"), { once: true });
+		})();
+	```
+}

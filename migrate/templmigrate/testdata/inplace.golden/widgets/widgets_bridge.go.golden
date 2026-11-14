@@ -1,0 +1,40 @@
+// Bridges converted from widgets/widgets.templ by ktml migrate templ. Unconverted templ
+// files call the KTML components through them until their own Phase 7
+// wave; delete a bridge when nothing calls it.
+
+package widgets
+
+import (
+	"context"
+	"io"
+
+	"github.com/a-h/templ"
+)
+
+// BadgeTempl renders the KTML component Badge for templ callers.
+func BadgeTempl(text string, count int) templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		return Badge{Text: text, Count: int64(count)}.Render(templ.ClearChildren(ctx), w)
+	})
+}
+
+// ListTempl renders the KTML component List for templ callers.
+func ListTempl(items []Item) templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		return List{View: NewListView(items)}.Render(templ.ClearChildren(ctx), w)
+	})
+}
+
+// PanelTempl renders the KTML component Panel for templ callers.
+func PanelTempl(item Item) templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		return Panel{View: NewPanelView(item), Children: templ.GetChildren(ctx)}.Render(templ.ClearChildren(ctx), w)
+	})
+}
+
+// ActionsTempl renders the KTML component Actions for templ callers.
+func ActionsTempl(title string, actions ...templ.Component) templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		return Actions{Title: title, Actions: migrateJoin(actions)}.Render(templ.ClearChildren(ctx), w)
+	})
+}

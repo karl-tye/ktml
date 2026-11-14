@@ -1,0 +1,46 @@
+import { Job, Board } from "./model.ktmlschema"
+import { Layout, Badge } from "./layout.ktml"
+
+Dashboard [board: Board] {
+	Layout title="{board.title}" {
+		BoardView board="{board}"
+		div id="activity" hx-get="/activity" hx-trigger="load" {}
+		div id="notice" hx-get="/notice" hx-trigger="load" {}
+	}
+}
+
+BoardView [board: Board] {
+	section id="board" {
+		h2 id="board-title" "Open work"
+		Counter
+		Tip
+		ul id="jobs" {
+			for job in board.jobs key job.id {
+				JobCard job="{job}"
+			}
+		}
+		div id="extra" {}
+		form id="new-job" {
+			input id="customer" name="customer" placeholder="Customer"
+		}
+	}
+}
+
+JobCard [job: Job] {
+	li class="job" data-id="{job.id}" {
+		strong "{job.title}"
+		Badge label="{job.status}"
+		input id="note-{job.id}" name="note" placeholder="Note"
+	}
+}
+
+Counter [] {
+	div id="counter" x-data="{ count: 0 }" {
+		button id="counter-inc" type="button" @click="count++" "Add"
+		span id="counter-label" x-text="'Count: ' + count" {}
+	}
+}
+
+Tip [] {
+	p id="tip" x-data=`{ init() { window.tipInits = (window.tipInits || 0) + 1 }, destroy() { window.tipDestroyed = (window.tipDestroyed || 0) + 1 } }` "Tip"
+}

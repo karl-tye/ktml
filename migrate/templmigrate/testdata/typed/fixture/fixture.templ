@@ -1,0 +1,121 @@
+package fixture
+
+import (
+	"fmt"
+)
+
+// Static renders only markup.
+templ Static() {
+	<!DOCTYPE html>
+	<div class="a" hidden>
+		<!-- note -->
+		Hello &amp; welcome
+	</div>
+}
+
+templ Paths(page Page, title string, count int, note *string, open bool) {
+	<h1 id={ title } data-count={ count }>{ title }</h1>
+	<p>{ page.Title }</p>
+	if open {
+		<span>open</span>
+	} else if note != nil {
+		<span>note</span>
+	} else {
+		<span>closed</span>
+	}
+	if page.Count > 0 && open {
+		<span>{ fmt.Sprintf("%d", page.Count) }</span>
+	}
+	<input disabled?={ open } checked?={ !open }/>
+	<a href={ page.Link }>link</a>
+	<a href={ templ.SafeURL(page.Link) }>safe</a>
+	<a href={ templ.URL(page.Link) }>url</a>
+	<button hx-get={ page.Link } hx-post={ "/pages/" + page.Title } hx-put={ "/" + page.Title }>act</button>
+	<div class={ BoxClass }></div>
+	<div class={ "a", title }></div>
+	<div class={ "a", templ.KV("b", open) }></div>
+	<div style={ fmt.Sprintf("width: %d%%", count) }></div>
+	<div x-data={ templ.JSONString(page) } @click={ title } :disabled={ open }></div>
+	<div data-open={ open }></div>
+	<div { templ.Attributes{"a": "b"}... }></div>
+	<li
+		if open {
+			aria-current="page"
+		}
+	></li>
+	<option
+		if open {
+			selected
+		}
+	></option>
+}
+
+templ Loops(page Page) {
+	for _, item := range page.Items {
+		<li>{ item.Label } { label(item) }</li>
+	}
+	for _, order := range page.Orders {
+		<li>{ order.OrderID }</li>
+	}
+	for _, u := range page.Plain {
+		<li>{ u.Name }</li>
+	}
+	for _, tag := range page.Tags {
+		<li>{ tag }</li>
+	}
+	for i, item := range page.Items {
+		<li>{ fmt.Sprint(i) }{ item.Label }</li>
+	}
+	for i := 0; i < 3; i++ {
+		<li>x</li>
+	}
+}
+
+templ Calls(page Page, content templ.Component, role Role) {
+	@Static()
+	@Paths(page, "t", 1, nil, true)
+	@Wrapper() {
+		<b>child</b>
+	}
+	@content
+	@templ.Raw("<b>raw</b>")
+	@templ.JSONScript("data", page)
+	@helper()
+	{{ total := page.Count + 1 }}
+	<span>{ fmt.Sprint(total) }</span>
+	switch role {
+		case "a":
+			<i>a</i>
+		default:
+			<i>other</i>
+	}
+	<script src="/x.js"></script>
+	<script>let a = 1 && 2;</script>
+	<style>a > b { color: red; }</style>
+}
+
+templ Wrapper() {
+	<section>
+		{ children... }
+	</section>
+}
+
+func helper() templ.Component {
+	return Static()
+}
+
+var scriptHandle = templ.NewOnceHandle()
+
+templ Forwarding(attrs templ.Attributes) {
+	<input type="text" { attrs... }/>
+	@templ.JSFuncCall("createChart", "chart-canvas")
+	@scriptHandle.Once() {
+		<script>window.ready = true;</script>
+	}
+	<style>.a { color: red; }</style>
+	<div hx-target-4*="#errors"></div>
+}
+
+templ ScriptData(data map[string]int) {
+	@templ.JSFuncCall("createChart", data)
+}
