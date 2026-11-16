@@ -98,6 +98,9 @@ func writeDevPlan(w io.Writer, p devPlan) {
 	}
 	if dev.PickerEnabled() {
 		fmt.Fprintf(w, "  picker:        %s\n", dev.PickerHotkey())
+		if editor := dev.PickerEditor(); editor != nil {
+			fmt.Fprintf(w, "  editor:        %s\n", strings.Join(editor, " "))
+		}
 	} else {
 		fmt.Fprintln(w, "  picker:        off")
 	}

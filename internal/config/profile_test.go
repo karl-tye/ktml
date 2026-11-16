@@ -141,6 +141,30 @@ func TestDevEnvironment_GIVENAnEnvFileSettingAControlVariable_WHENLoaded_THENRef
 	}
 }
 
+func TestDevPicker_GIVENAnEditor_WHENParsed_THENKeepsItsArgumentsOrRejectsAnUnusableOne(t *testing.T) {
+	parse := func(picker string) (*Dev, error) {
+		cfg, err := Parse([]byte(`{"dev": {"proxy_target": "http://127.0.0.1:8080", "command": ["x"], "explorer": {}, "picker": ` + picker + `}}`))
+		if err != nil {
+			return nil, err
+		}
+		return cfg.Dev, nil
+	}
+	dev, err := parse(`{"editor": ["code", "-g", "{file}:{line}:{column}"]}`)
+	if err != nil || !reflect.DeepEqual(dev.PickerEditor(), []string{"code", "-g", "{file}:{line}:{column}"}) {
+		t.Fatalf("editor = %v, %v", dev, err)
+	}
+	if dev, err := parse(`{}`); err != nil || dev.PickerEditor() != nil {
+		t.Errorf("no editor = %v, %v", dev, err)
+	}
+	for _, editor := range []string{`[]`, `[""]`, `["code"]`, `["", "{file}"]`} {
+		_, err := parse(`{"editor": ` + editor + `}`)
+		var pathError *configdiag.PathError
+		if !errors.As(err, &pathError) || configdiag.FormatPath(pathError.Path) != "dev.picker.editor" {
+			t.Errorf("editor %s: error = %v, want a path error at dev.picker.editor", editor, err)
+		}
+	}
+}
+
 func TestDevPicker_GIVENHotkeys_WHENParsed_THENCanonicalizesOrRejects(t *testing.T) {
 	parse := func(picker string) (*Dev, error) {
 		cfg, err := Parse([]byte(`{"dev": {"proxy_target": "http://127.0.0.1:8080", "command": ["x"], "explorer": {}` + picker + `}}`))

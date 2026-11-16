@@ -72,6 +72,12 @@ type DevPicker struct {
 	Hotkey string `json:"hotkey,omitempty"`
 	// Disabled turns the picker off.
 	Disabled bool `json:"disabled,omitempty"`
+	// Editor opens a picked element's source on Ctrl+click: a command and
+	// its arguments, run without a shell, where {file}, {line}, and {column}
+	// are the source's absolute path, line, and column, such as
+	// ["code", "-g", "{file}:{line}:{column}"]. Without it, Ctrl+click
+	// copies file:line:column.
+	Editor []string `json:"editor,omitempty"`
 }
 
 // DefaultPickerHotkey toggles pick mode unless dev.picker.hotkey is set.
@@ -89,6 +95,14 @@ func (d *Dev) PickerHotkey() string {
 		return DefaultPickerHotkey
 	}
 	return d.Picker.Hotkey
+}
+
+// PickerEditor is the command that opens a picked element's source, or nil.
+func (d *Dev) PickerEditor() []string {
+	if d == nil || d.Picker == nil {
+		return nil
+	}
+	return d.Picker.Editor
 }
 
 // canonicalHotkey validates a hotkey and spells it with its modifiers in
@@ -632,6 +646,11 @@ func validateDev(dev *Dev) error {
 			return &configdiag.PathError{Path: []string{"dev", "picker", "hotkey"}, Message: fmt.Sprintf("dev picker hotkey %q must be Ctrl, Alt, or Meta (optionally with Shift) and a letter, digit, or F1-F12, such as %s", picker.Hotkey, DefaultPickerHotkey)}
 		}
 		picker.Hotkey = canonical
+	}
+	if picker := dev.Picker; picker != nil && picker.Editor != nil {
+		if len(picker.Editor) == 0 || picker.Editor[0] == "" || !slices.ContainsFunc(picker.Editor, func(arg string) bool { return strings.Contains(arg, "{file}") }) {
+			return &configdiag.PathError{Path: []string{"dev", "picker", "editor"}, Message: `dev picker editor must be a command and its arguments, one of them naming {file}, such as ["code", "-g", "{file}:{line}:{column}"]`}
+		}
 	}
 	return nil
 }
