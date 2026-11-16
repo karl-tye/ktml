@@ -162,21 +162,23 @@ const pickerScript = `<script data-ktml-client>
 		host.setAttribute("data-ktml-picker", "");
 		host.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:2147483646";
 		const root = host.attachShadow({ mode: "open" });
-		root.innerHTML = "<div data-box style='position:fixed;display:none;box-sizing:border-box;border:2px solid #6366f1;background:rgba(99,102,241,.12);border-radius:3px'></div>" +
-			"<div data-label style='position:fixed;left:8px;bottom:8px;max-width:calc(100vw - 16px);box-sizing:border-box;padding:6px 10px;border-radius:6px;background:#1e1b4b;color:#e0e7ff;font:12px/1.4 ui-sans-serif,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.3)'>" +
-			"<div data-path></div><div data-hint style='opacity:.7'>Click to open in the Explorer · Shift+scroll or Alt+Shift+↑↓ to walk up and down · Esc to exit</div></div>";
+		// Styles go through the CSSOM, which a page's style-src does not
+		// restrict, rather than style attributes or a style element.
+		root.innerHTML = "<div data-box></div><div data-label><div data-path></div><div data-hint>Click to open in the Explorer · Shift+scroll or Alt+Shift+↑↓ to walk up and down · Esc to exit</div></div>";
+		root.querySelector("[data-box]").style.cssText = "position:fixed;display:none;box-sizing:border-box;border:2px solid #6366f1;background:rgba(99,102,241,.12);border-radius:3px";
+		root.querySelector("[data-label]").style.cssText = "position:fixed;left:8px;bottom:8px;max-width:calc(100vw - 16px);box-sizing:border-box;padding:6px 10px;border-radius:6px;background:#1e1b4b;color:#e0e7ff;font:12px/1.4 ui-sans-serif,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.3)";
+		root.querySelector("[data-hint]").style.opacity = ".7";
 		box = root.querySelector("[data-box]");
 		label = root.querySelector("[data-path]");
 		label.textContent = "KTML picker: point at a component";
 		document.documentElement.appendChild(host);
-		cursor = document.createElement("style");
-		cursor.setAttribute("data-ktml-client", "");
-		cursor.textContent = "*{cursor:crosshair!important}";
-		document.documentElement.appendChild(cursor);
+		cursor = new CSSStyleSheet();
+		cursor.replaceSync("*{cursor:crosshair!important}");
+		document.adoptedStyleSheets = [...document.adoptedStyleSheets, cursor];
 	};
 	const hide = () => {
 		if (host) host.remove();
-		if (cursor) cursor.remove();
+		if (cursor) document.adoptedStyleSheets = document.adoptedStyleSheets.filter((sheet) => sheet !== cursor);
 		host = box = label = cursor = null;
 	};
 

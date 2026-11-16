@@ -461,7 +461,10 @@ const clientScript = `<script data-ktml-client>
 			host.attachShadow({ mode: "open" });
 			document.documentElement.appendChild(host);
 		}
-		host.shadowRoot.innerHTML = "<strong style='color:#fff'>KTML: the last valid page is still shown</strong><pre style='white-space:pre-wrap'></pre>";
+		host.shadowRoot.innerHTML = "<strong>KTML: the last valid page is still shown</strong><pre></pre>";
+		// CSSOM styles, which a page's style-src does not restrict.
+		host.shadowRoot.querySelector("strong").style.color = "#fff";
+		host.shadowRoot.querySelector("pre").style.whiteSpace = "pre-wrap";
 		host.shadowRoot.querySelector("pre").textContent = message;
 	};
 	const clearError = () => {

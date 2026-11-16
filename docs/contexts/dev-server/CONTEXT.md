@@ -37,7 +37,7 @@ The transport for livereload events. The browser opens a long-lived HTTP connect
 _Avoid_: WebSocket (not used), event stream
 
 **Reverse Proxy**:
-An HTTP reverse proxy that sits between the browser and the user's application server. Intercepts HTML responses to inject the page's session token and the livereload SSE script. It never sees component props.
+An HTTP reverse proxy that sits between the browser and the user's application server. Intercepts HTML responses to inject the page's session token and the livereload SSE script. When the page's Content-Security-Policy headers restrict scripts, it allows the injected scripts with a per-response nonce (a policy in a `<meta>` tag cannot be amended and gets a warning). It never sees component props.
 _Avoid_: Dev proxy, middleware
 
 **Render Registry**:

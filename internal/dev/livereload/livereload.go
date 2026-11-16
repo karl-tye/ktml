@@ -30,6 +30,8 @@ type Server struct {
 	lastError string
 	onSession func(session string, connected bool)
 	picker    *Picker
+	// metaCSPWarning warns once about a page policy in a <meta> tag.
+	metaCSPWarning sync.Once
 }
 
 // SessionHeader is the response header carrying a page's request token, which
@@ -86,7 +88,18 @@ func NewServer(targetURL string) *Server {
 		s.mu.Lock()
 		picker := s.picker
 		s.mu.Unlock()
-		bodyStr = strings.Replace(bodyStr, "</head>", clientTag(session)+pickerTag(picker)+"\n</head>", 1)
+		if strings.Contains(bodyStr, "</head>") {
+			injected := clientTag(session) + pickerTag(picker)
+			if nonce := newNonce(); allowNonce(r.Header, nonce) {
+				injected = withNonce(injected, nonce)
+			}
+			if metaCSP.MatchString(bodyStr) {
+				s.metaCSPWarning.Do(func() {
+					slog.Warn("A page sets its Content-Security-Policy in a <meta> tag, which ktml dev cannot amend; if it restricts scripts, the browser blocks live reload, component patching, and the picker. Send the policy as a response header instead, and ktml dev allows its client with a nonce", "path", r.Request.URL.Path)
+				})
+			}
+			bodyStr = strings.Replace(bodyStr, "</head>", injected+"\n</head>", 1)
+		}
 
 		r.Body = io.NopCloser(bytes.NewReader([]byte(bodyStr)))
 		r.Header.Set("Content-Length", strconv.Itoa(len(bodyStr)))
