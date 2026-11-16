@@ -18,16 +18,28 @@ const (
 	EventRestart
 )
 
+// Event is one debounced batch of changes. Files are the batch's watch and
+// restart_watch matches; Type is EventRestart if any matched restart_watch.
+// Assets are the reload_watch matches, which need neither generation nor a
+// rebuild: pages only reload them.
 type Event struct {
-	Type  EventType
-	Files []string
+	Type   EventType
+	Files  []string
+	Assets []string
 }
 
 type Watcher struct {
 	dir          string
 	watch        []string
 	restartWatch []string
+	assetWatch   []string
 	debounce     time.Duration
+}
+
+// SetAssetWatch sets the reload_watch patterns: static assets that pages
+// reload without a rebuild. A file matching one is never a restart change.
+func (w *Watcher) SetAssetWatch(patterns []string) {
+	w.assetWatch = patterns
 }
 
 func New(dir string, watch []string, restartWatch []string, debounce time.Duration) *Watcher {
@@ -60,7 +72,7 @@ func (w *Watcher) Start(ctx context.Context) <-chan Event {
 		defer close(out)
 
 		var timer *time.Timer
-		var currentFiles []string
+		var currentFiles, currentAssets []string
 		currentType := EventReload
 
 		for {
@@ -93,9 +105,15 @@ func (w *Watcher) Start(ctx context.Context) <-chan Event {
 				matched := false
 				for _, name := range names {
 					base := filepath.Base(name)
-					matchedReload := matchAny(base, w.watch)
 					// The Hub writes generated Go itself and decides whether it
-					// needs a rebuild, so its outputs never restart the backend.
+					// needs a rebuild, so its outputs are never assets and
+					// never restart the backend.
+					if !GeneratedGo(base) && matchAny(base, w.assetWatch) {
+						matched = true
+						currentAssets = append(currentAssets, name)
+						continue
+					}
+					matchedReload := matchAny(base, w.watch)
 					matchedRestart := matchAny(base, w.restartWatch) && !GeneratedGo(base)
 					if !matchedReload && !matchedRestart {
 						continue
@@ -117,10 +135,11 @@ func (w *Watcher) Start(ctx context.Context) <-chan Event {
 
 			case <-timerCh:
 				out <- Event{
-					Type:  currentType,
-					Files: currentFiles,
+					Type:   currentType,
+					Files:  currentFiles,
+					Assets: currentAssets,
 				}
-				currentFiles = nil
+				currentFiles, currentAssets = nil, nil
 				currentType = EventReload
 				timer = nil
 

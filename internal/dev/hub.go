@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -467,7 +468,10 @@ func (h *Hub) Listen(ctx context.Context, events <-chan watcher.Event) {
 			case watcher.EventRestart:
 				h.restart(ctx, ev.Files)
 			case watcher.EventReload:
-				h.reload(ctx, ev.Files)
+				if len(ev.Files) > 0 || len(ev.Assets) == 0 || len(h.pending) > 0 {
+					h.reload(ctx, ev.Files)
+				}
+				h.reloadAssets(ev.Assets)
 			}
 		}
 	}
@@ -499,6 +503,24 @@ func (h *Hub) restart(ctx context.Context, files []string) {
 		h.lrServer.ClearError()
 	}
 	h.lrServer.FullReload()
+}
+
+// reloadAssets tells every page to reload changed reload_watch assets: a
+// stylesheet is swapped in place, anything else reloads the page. A restart
+// batch's full reload covers its assets.
+func (h *Hub) reloadAssets(assets []string) {
+	if len(assets) == 0 || h.lrServer == nil {
+		return
+	}
+	paths := make([]string, len(assets))
+	for index, asset := range assets {
+		paths[index] = filepath.ToSlash(filepath.Clean(asset))
+	}
+	// An editor save may write a file more than once in a batch.
+	slices.Sort(paths)
+	paths = slices.Compact(paths)
+	slog.Debug("Reloading assets", "paths", paths)
+	h.lrServer.ReloadAssets(paths)
 }
 
 func restartFailed(err error) string {

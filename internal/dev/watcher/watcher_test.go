@@ -247,3 +247,66 @@ func waitForFile(t *testing.T, events <-chan Event, file string) {
 		}
 	}
 }
+
+func TestWatcher_GIVENAssetWatch_WHENAssetsChangeWithSourcesAndRestartFiles_THENReportsAssetsApart(t *testing.T) {
+	dir := t.TempDir()
+	for _, name := range []string{"site.css", "page.ktml", "main.go", "logo.svg"} {
+		if err := os.WriteFile(filepath.Join(dir, name), nil, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// site.css matches restart_watch too: reload_watch wins, so a stylesheet
+	// moved from restart_watch to reload_watch no longer restarts.
+	w := New(dir, []string{"*.ktml"}, []string{"*.go", "*.css"}, 20*time.Millisecond)
+	w.SetAssetWatch([]string{"*.css", "*.svg"})
+	events := w.Start(t.Context())
+
+	if err := os.WriteFile(filepath.Join(dir, "site.css"), []byte("a{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case ev := <-events:
+		if ev.Type != EventReload || len(ev.Files) != 0 || !onlyNamed(ev.Assets, "site.css") {
+			t.Errorf("asset-only batch = %+v, want a reload with the stylesheet as its only asset", ev)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timeout waiting for the asset event")
+	}
+
+	for _, name := range []string{"page.ktml", "logo.svg"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("x"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	select {
+	case ev := <-events:
+		if ev.Type != EventReload || !onlyNamed(ev.Files, "page.ktml") || !onlyNamed(ev.Assets, "logo.svg") {
+			t.Errorf("mixed batch = %+v, want the source in Files and the image in Assets", ev)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timeout waiting for the mixed event")
+	}
+
+	if err := os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case ev := <-events:
+		if ev.Type != EventRestart {
+			t.Errorf("restart batch = %+v, want a restart", ev)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timeout waiting for the restart event")
+	}
+}
+
+// onlyNamed reports whether paths name only the file name, at least once: an
+// editor save may write a file more than once in a batch.
+func onlyNamed(paths []string, name string) bool {
+	for _, path := range paths {
+		if filepath.Base(path) != name {
+			return false
+		}
+	}
+	return len(paths) > 0
+}

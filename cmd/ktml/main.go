@@ -1028,8 +1028,9 @@ func devCmd() {
 		go reportCapture(ctx, os.Stderr, controlClient, time.Duration(cfg.Dev.ReadyTimeoutMS)*time.Millisecond)
 	}
 
-	slog.Debug("Starting watcher", "watch", cfg.Dev.Watch, "restartWatch", cfg.Dev.RestartWatch)
+	slog.Debug("Starting watcher", "watch", cfg.Dev.Watch, "restartWatch", cfg.Dev.RestartWatch, "reloadWatch", cfg.Dev.ReloadWatch)
 	w := watcher.New(".", cfg.Dev.Watch, cfg.Dev.RestartWatch, 50*time.Millisecond)
+	w.SetAssetWatch(cfg.Dev.ReloadWatch)
 	events := w.Start(ctx)
 
 	slog.Debug("Starting hub listen loop")

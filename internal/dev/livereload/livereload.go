@@ -273,6 +273,16 @@ func (s *Server) ClearError() {
 	}
 }
 
+// ReloadAssets tells every page that static assets changed, by their
+// project-relative slash paths: the client swaps changed stylesheets in place
+// and reloads the page for anything else.
+func (s *Server) ReloadAssets(paths []string) {
+	payload, _ := json.Marshal(struct {
+		Paths []string `json:"paths"`
+	}{paths})
+	s.Broadcast("assets", string(payload))
+}
+
 func (s *Server) FullReload() {
 	slog.Debug("Livereload FullReload triggered")
 	s.Broadcast("reload", "1")

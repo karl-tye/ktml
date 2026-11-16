@@ -472,6 +472,48 @@ const clientScript = `<script data-ktml-client>
 		if (host) host.remove();
 	};
 
+	// reloadAssets applies a dev.reload_watch change. Changed stylesheets
+	// are swapped in place: each same-origin <link rel=stylesheet> whose
+	// file name matches is replaced, once the new copy loads, by one with a
+	// cache-busting query; when none matches, every same-origin stylesheet
+	// is refreshed (the file may be @imported). Any other asset, or a page
+	// without stylesheets to refresh, reloads.
+	const reloadAssets = (paths) => {
+		const fileName = (path) => path.split("/").pop();
+		if (!paths.length || !paths.every((path) => /\.css$/i.test(path))) {
+			console.log("[KTML] Assets changed; reloading", paths);
+			reload();
+			return;
+		}
+		const names = new Set(paths.map(fileName));
+		const links = Array.from(document.querySelectorAll('link[rel~="stylesheet"][href]')).filter((link) => {
+			try {
+				return new URL(link.href, location.href).origin === location.origin;
+			} catch (error) {
+				return false;
+			}
+		});
+		const matching = links.filter((link) => names.has(fileName(new URL(link.href, location.href).pathname)));
+		const targets = matching.length ? matching : links;
+		if (!targets.length) {
+			reload();
+			return;
+		}
+		for (const link of targets) {
+			const url = new URL(link.href, location.href);
+			url.searchParams.set("ktml-reload", String(Date.now()));
+			const next = link.cloneNode(false);
+			// The changed file no longer matches a subresource integrity hash.
+			next.removeAttribute("integrity");
+			next.href = url.href;
+			const done = () => link.remove();
+			next.addEventListener("load", done, { once: true });
+			next.addEventListener("error", done, { once: true });
+			link.after(next);
+		}
+		console.log("[KTML] Reloaded stylesheets", paths);
+	};
+
 	// The stream closes when the page is hidden: a page kept in the
 	// back/forward cache would otherwise hold its connection, and browsers
 	// allow only six per host, so a few navigations would stall every
@@ -494,6 +536,17 @@ const clientScript = `<script data-ktml-client>
 				return;
 			}
 			patch(value);
+		});
+		sse.addEventListener("assets", (event) => {
+			let value;
+			try {
+				value = JSON.parse(event.data);
+			} catch (error) {
+				console.error("[KTML] Malformed asset change; reloading", error);
+				reload();
+				return;
+			}
+			reloadAssets(value.paths || []);
 		});
 		sse.addEventListener("diagnostic", (event) => showError(event.data));
 		sse.addEventListener("clear", clearError);

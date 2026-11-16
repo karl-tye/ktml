@@ -9,12 +9,16 @@ The `ktml dev` command experience. Starts a reverse proxy, a file watcher, and t
 _Avoid_: Dev mode, development server, hot reload server
 
 **File Watcher**:
-A filesystem observer (via `fsnotify`) that recursively monitors the project directory. Categorizes changes as reload events (`.ktml`, `.css`, `.js`) or restart events (`.go`, `.mod`, `.sum`). Debounces rapid changes to avoid redundant processing.
+A filesystem observer (via `fsnotify`) that recursively monitors the project directory. Categorizes each debounced batch as a reload event (`watch`: `.ktml`, `.ktmlschema`) or a restart event (`restart_watch`: `.go`, `.mod`, `.sum`), and reports `reload_watch` static assets (`.css`, images) apart. A restart batch still generates its KTML sources, before the rebuild. Debounces rapid changes to avoid redundant processing.
 _Avoid_: File observer, change detector
 
 **Watch Pattern**:
-A glob pattern configured in `ktml.config.json` under `dev.watch` or `dev.restart_watch`. Files matching `watch` trigger a reload (re-generate + livereload). Files matching `restart_watch` trigger a full process restart of the user's application server.
+A glob pattern configured in `ktml.config.json` under `dev.watch`, `dev.restart_watch`, or `dev.reload_watch`. Files matching `watch` trigger a reload (re-generate + livereload). Files matching `restart_watch` trigger a full process restart of the user's application server. Files matching `reload_watch` are Static Assets.
 _Avoid_: Watch glob, file filter
+
+**Static Asset**:
+A file matching `dev.reload_watch`, such as a stylesheet or image, that pages reload without generation or a rebuild. The SSE `assets` event names the changed files; the client swaps a changed stylesheet in place and reloads the page for anything else. A `reload_watch` match is never a restart.
+_Avoid_: Static file reload, CSS injection
 
 **Debounce**:
 A configurable delay after a file change before the Watcher emits an event. Prevents rapid successive saves from triggering multiple generations and reloads. Configured via `dev.debounce` in Configuration.
@@ -33,7 +37,7 @@ Targeted DOM patching that morphs only the live Component instances a change aff
 _Avoid_: Hot reload, HMR, patch reload
 
 **SSE (Server-Sent Events)**:
-The transport for livereload events. The browser opens a long-lived HTTP connection to `/__ktml/livereload?session=…` for its page session. The server pushes `reload`, `patch`, and the `diagnostic`/`clear` overlay events. A small inline `<script>` injected into every proxied HTML response sets up the EventSource listener.
+The transport for livereload events. The browser opens a long-lived HTTP connection to `/__ktml/livereload?session=…` for its page session. The server pushes `reload`, `patch`, `assets`, and the `diagnostic`/`clear` overlay events. A small inline `<script>` injected into every proxied HTML response sets up the EventSource listener.
 _Avoid_: WebSocket (not used), event stream
 
 **Reverse Proxy**:

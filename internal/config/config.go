@@ -27,6 +27,11 @@ type Dev struct {
 	Port         int      `json:"port"`
 	Watch        []string `json:"watch"`
 	RestartWatch []string `json:"restart_watch"`
+	// ReloadWatch are static assets, such as stylesheets and images, that
+	// pages reload without generation or a rebuild: a stylesheet is swapped
+	// in place, anything else reloads the page. A file matching one is never
+	// a restart_watch change.
+	ReloadWatch []string `json:"reload_watch,omitempty"`
 	// Explorer, when set, makes ktml dev also serve the Component Explorer
 	// over the project root.
 	Explorer *DevExplorer `json:"explorer,omitempty"`
@@ -593,6 +598,11 @@ func validateDev(dev *Dev) error {
 	}
 	if len(dev.Command) == 0 {
 		return &configdiag.PathError{Path: []string{"dev"}, Message: "command is required"}
+	}
+	for index, pattern := range dev.ReloadWatch {
+		if _, err := filepath.Match(pattern, ""); err != nil || pattern == "" {
+			return &configdiag.PathError{Path: []string{"dev", "reload_watch", strconv.Itoa(index)}, Message: fmt.Sprintf("dev reload_watch %q is not a file name pattern such as *.css", pattern)}
+		}
 	}
 	if dev.ReadyTimeoutMS < 0 {
 		return &configdiag.PathError{Path: []string{"dev", "ready_timeout_ms"}, Message: "dev ready_timeout_ms must not be negative"}

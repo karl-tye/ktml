@@ -332,3 +332,31 @@ func TestProxy_GIVENThePicker_WHENSet_THENOnlyThenPagesGetItsConfigAndScript(t *
 		t.Error("the picker script is not in the head")
 	}
 }
+
+func TestSSE_GIVENChangedAssets_WHENReloaded_THENEveryPageGetsTheirSlashPaths(t *testing.T) {
+	target := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	defer target.Close()
+	server := NewServer(target.URL)
+	proxy := httptest.NewServer(server)
+	defer proxy.Close()
+	response, err := http.Get(proxy.URL + "/__ktml/livereload?session=page-a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	deadline := time.Now().Add(time.Second)
+	for server.ActiveClients() != 1 && time.Now().Before(deadline) {
+		time.Sleep(time.Millisecond)
+	}
+
+	server.ReloadAssets([]string{"static/css/site.css", "static/logo.svg"})
+
+	reader := sse.NewReader(response.Body)
+	event, err := reader.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Name != "assets" || event.Data != `{"paths":["static/css/site.css","static/logo.svg"]}` {
+		t.Errorf("event = %s %s", event.Name, event.Data)
+	}
+}
