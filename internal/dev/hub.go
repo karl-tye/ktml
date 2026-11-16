@@ -233,6 +233,9 @@ type Hub struct {
 	pending          map[string]bool
 	control          Swapper
 	generation       uint64
+	// forceRestart makes reload restart the backend and fully reload even
+	// when the batch could be patched; set for restart_watch batches.
+	forceRestart bool
 	// ready bounds the wait for a restarted backend; zero is
 	// DefaultReadyTimeout.
 	ready time.Duration
@@ -462,22 +465,44 @@ func (h *Hub) Listen(ctx context.Context, events <-chan watcher.Event) {
 		case ev := <-events:
 			switch ev.Type {
 			case watcher.EventRestart:
-				slog.Debug("Restarting runner and triggering full reload")
-				if h.runner == nil || h.lrServer == nil {
-					continue
-				}
-				if err := h.runner.Restart(ctx, h.backendReady); err != nil {
-					slog.Error("Runner restart failed; keeping the last working backend", "error", err)
-					h.showError(fmt.Sprintf("Backend rebuild failed; the last working backend keeps serving.\n\n%v", err))
-					continue
-				}
-				h.lrServer.ClearError()
-				h.lrServer.FullReload()
+				h.restart(ctx, ev.Files)
 			case watcher.EventReload:
 				h.reload(ctx, ev.Files)
 			}
 		}
 	}
+}
+
+// restart handles a batch with a restart_watch change. KTML sources changed
+// in the same batch are generated first, so the rebuild compiles their fresh
+// output; the backend restarts and every page reloads once. A KTML source that
+// fails to validate or generate stays pending with its overlay, and the
+// backend still restarts for the other changes.
+func (h *Hub) restart(ctx context.Context, files []string) {
+	if h.runner == nil || h.lrServer == nil {
+		h.reload(ctx, files)
+		return
+	}
+	h.forceRestart = true
+	restarted := h.reload(ctx, files)
+	h.forceRestart = false
+	if restarted {
+		return
+	}
+	slog.Debug("Restarting runner and triggering full reload")
+	if err := h.runner.Restart(ctx, h.backendReady); err != nil {
+		slog.Error("Runner restart failed; keeping the last working backend", "error", err)
+		h.showError(restartFailed(err))
+		return
+	}
+	if len(h.pending) == 0 {
+		h.lrServer.ClearError()
+	}
+	h.lrServer.FullReload()
+}
+
+func restartFailed(err error) string {
+	return fmt.Sprintf("Backend rebuild failed; the last working backend keeps serving.\n\n%v", err)
 }
 
 func (h *Hub) backendReady(ctx context.Context) error {
@@ -487,8 +512,9 @@ func (h *Hub) backendReady(ctx context.Context) error {
 // reload prepares one batch from the changed files, any files left over from an
 // earlier unpublished batch, and every transitive dependent of a changed or
 // removed source. Generation, build state, the backend, the browser, and the
-// AST baselines are published for the whole batch or not at all.
-func (h *Hub) reload(ctx context.Context, files []string) {
+// AST baselines are published for the whole batch or not at all. It reports
+// whether it restarted the backend, successfully or not.
+func (h *Hub) reload(ctx context.Context, files []string) bool {
 	fullReload := false
 	var patchedComponent string
 	var patchedFile string
@@ -512,7 +538,7 @@ func (h *Hub) reload(ctx context.Context, files []string) {
 		batchFiles[file] = true
 	}
 	if len(batchFiles) == 0 {
-		return
+		return false
 	}
 	fail := func() {
 		for file := range batchFiles {
@@ -527,7 +553,7 @@ func (h *Hub) reload(ctx context.Context, files []string) {
 			if !os.IsNotExist(err) {
 				slog.Error("Failed to read changed file", "file", file, "error", err)
 				fail()
-				return
+				return false
 			}
 			removedFiles = append(removedFiles, file)
 			fullReload = true
@@ -539,7 +565,7 @@ func (h *Hub) reload(ctx context.Context, files []string) {
 			slog.Error("Keeping last valid KTML after validation failure", "file", file, "error", err)
 			h.showError(err.Error())
 			fail()
-			return
+			return false
 		}
 		sources[file] = content
 		if requiresRebuild(file) {
@@ -575,31 +601,35 @@ func (h *Hub) reload(ctx context.Context, files []string) {
 		if err != nil {
 			slog.Error("Failed to read dependent file", "file", file, "error", err)
 			fail()
-			return
+			return false
 		}
 		document, err := validDocument(file, content)
 		if err != nil {
 			slog.Error("Keeping last working output after dependent validation failure", "file", file, "error", err)
 			h.showError(err.Error())
 			fail()
-			return
+			return false
 		}
 		sources[file] = content
 		slog.Debug("Regenerating dependent", "file", file)
 		pendingASTs[file] = document
 	}
 
+	if h.forceRestart {
+		fullReload = true
+		fullReloadReason = append(fullReloadReason, "restart_watch")
+	}
 	if patchChanges > 1 {
 		fullReload = true
 		fullReloadReason = append(fullReloadReason, "multiple_patch_changes")
 	}
 	if !fullReload && patchedComponent == "" && len(pendingASTs) == 0 {
-		return
+		return false
 	}
 	if !fullReload && patchedComponent != "" && h.lrServer == nil {
 		slog.Error("lrServer is nil, cannot hot reload")
 		fail()
-		return
+		return false
 	}
 
 	batch := Batch{Generate: sortedKeys(pendingASTs), Remove: removedFiles}
@@ -607,10 +637,11 @@ func (h *Hub) reload(ctx context.Context, files []string) {
 		slog.Error("Generate failed during reload preparation; keeping the last working output", "error", err)
 		h.showError(err.Error())
 		fail()
-		return
+		return false
 	}
 
 	published := false
+	restarted := false
 	if !fullReload && patchedComponent != "" {
 		slog.Debug("Attempting hot reload", "component", patchedComponent, "file", patchedFile)
 		if reason := h.patch(ctx, batch.Generate, sources); reason != "" {
@@ -625,8 +656,12 @@ func (h *Hub) reload(ctx context.Context, files []string) {
 		slog.Debug("Full reload triggered", "reasons", fullReloadReason)
 		published = h.lrServer != nil
 		if published && h.runner != nil {
+			restarted = true
 			if err := h.runner.Restart(ctx, h.backendReady); err != nil {
 				slog.Error("Runner restart failed; keeping the last working backend", "error", err)
+				if h.forceRestart {
+					h.showError(restartFailed(err))
+				}
 				published = false
 			}
 		} else if published {
@@ -643,7 +678,7 @@ func (h *Hub) reload(ctx context.Context, files []string) {
 
 	if !published {
 		fail()
-		return
+		return restarted
 	}
 	if !fullReload && h.lrServer != nil {
 		h.lrServer.ClearError()
@@ -655,6 +690,7 @@ func (h *Hub) reload(ctx context.Context, files []string) {
 		delete(h.asts, file)
 	}
 	clear(h.pending)
+	return restarted
 }
 
 // patch swaps the application's interpreter program with the batch sources and
