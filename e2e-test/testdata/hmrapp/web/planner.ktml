@@ -1,0 +1,15 @@
+import { Board } from "./model.ktmlschema"
+import { Badge } from "./layout.ktml"
+
+Planner [board: Board] {
+	h2 id="planner-title" "Planner"
+	section id="planner" class="planner" {
+		for job in board.jobs key job.id {
+			div class="planner-row" data-id="{job.id}" {
+				span class="when" "{job.id}"
+				span class="status state-{job.status}" "{job.status}"
+				Badge label="{job.title}"
+			}
+		}
+	}
+}

@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -208,8 +209,13 @@ func TestPicker_GIVENTheHMRAppUnderKtmlDev_WHENAComponentIsPicked_THENItOpensInT
 	// run. Counter has a story, so the same tab opens at it.
 	hotkey()
 	until(t, page, "pick mode again", `() => !!document.querySelector("[data-ktml-picker]")`, timeout)
+	// The hovered element is selected; a click on it opens the innermost
+	// component.
 	moveTo("#counter-inc")
-	waitSelected("counter", "Counter")
+	waitSelected("counter", "button#counter-inc")
+	if got := evalString(t, page, labelPath); !strings.Contains(got, "BoardView › Counter › button#counter-inc") {
+		t.Errorf("counter label = %q", got)
+	}
 	x, y = center("#counter-inc")
 	page.Mouse.MustMoveTo(x, y)
 	page.Mouse.MustClick(proto.InputMouseButtonLeft)
@@ -232,4 +238,208 @@ func TestPicker_GIVENTheHMRAppUnderKtmlDev_WHENAComponentIsPicked_THENItOpensInT
 	page.Mouse.MustMoveTo(x, y)
 	page.Mouse.MustClick(proto.InputMouseButtonLeft)
 	until(t, page, "the counter after pick mode", `() => document.querySelector("#counter-label").textContent === "Count: 1"`, timeout)
+}
+
+// TestPicker_GIVENAPageGoPassedIntoALayoutSlot_WHENElementsArePicked_THENShowsTheSlottedComponentAndEachElementsSource
+// picks elements inside a page component that Go passes into a layout's
+// content slot: the page has its own level and box in the chain, a hovered
+// element inside a row is highlighted with its Element Path and .ktml
+// source, the walk goes out element by element and then component by
+// component, C copies the source, Ctrl+click opens it in dev.picker.editor,
+// and a click opens the innermost component's story.
+func TestPicker_GIVENAPageGoPassedIntoALayoutSlot_WHENElementsArePicked_THENShowsTheSlottedComponentAndEachElementsSource(t *testing.T) {
+	prepareBinaries(t)
+	explorerPort := freePort(t)
+	var opened string
+	app, _ := newHMRAppWith(t, func(dir string, devCfg map[string]any) {
+		devCfg["explorer"] = map[string]any{"addr": fmt.Sprintf("127.0.0.1:%d", explorerPort)}
+		opened = filepath.Join(dir, "opened.txt")
+		devCfg["picker"] = map[string]any{"editor": []string{"sh", "-c", `printf '%s\n' "$1" >> "$2"`, "editor", "{file}:{line}:{column}", opened}}
+	})
+	explorerURL := fmt.Sprintf("http://127.0.0.1:%d", explorerPort)
+	browser := rod.New().ControlURL(launcher.New().Headless(true).Set("headless", "new").MustLaunch()).MustConnect()
+	t.Cleanup(browser.MustClose)
+	const timeout = 15 * time.Second
+
+	page := browser.MustPage(app.url + "/planner")
+	waitLoad(t, page, timeout)
+	page.MustSetViewport(1200, 800, 1, false)
+	_ = proto.BrowserGrantPermissions{Origin: app.url, Permissions: []proto.BrowserPermissionType{proto.BrowserPermissionTypeClipboardReadWrite, proto.BrowserPermissionTypeClipboardSanitizedWrite}}.Call(browser)
+	const status = `#planner .planner-row[data-id="j1"] span.status`
+	until(t, page, "the picker", `() => window.__ktmlPickerLoaded === true && !!document.querySelector('`+status+`')`, timeout)
+
+	center := func(selector string) (float64, float64) {
+		t.Helper()
+		box := page.MustEval(`(selector) => { const r = document.querySelector(selector).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }`, selector).Arr()
+		return box[0].Num(), box[1].Num()
+	}
+	moveTo := func(selector string) {
+		t.Helper()
+		x, y := center(selector)
+		page.Mouse.MustMoveTo(x-1, y)
+		page.Mouse.MustMoveTo(x, y)
+	}
+	shadow := func(part string) string {
+		return `() => { const host = document.querySelector("[data-ktml-picker]"); const node = host && host.shadowRoot.querySelector("` + part + `"); return node ? node.textContent : ""; }`
+	}
+	labelPath, source := shadow("[data-path]"), shadow("[data-source]")
+	current := shadow("[data-path] b")
+	waitSelected := func(what, want string) {
+		t.Helper()
+		until(t, page, what+": "+want+" selected", `() => (`+current+`)() === `+fmt.Sprintf("%q", want), timeout)
+	}
+	waitSource := func(what, want string) {
+		t.Helper()
+		until(t, page, what+": source "+want, `() => (`+source+`)().startsWith(`+fmt.Sprintf("%q", want)+`)`, timeout)
+	}
+	// box is the highlight's rectangle; rect a selector's, or the union of
+	// several.
+	box := func() []float64 {
+		values := page.MustEval(`() => { const r = document.querySelector("[data-ktml-picker]").shadowRoot.querySelector("[data-box]").getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }`).Arr()
+		return []float64{values[0].Num(), values[1].Num(), values[2].Num(), values[3].Num()}
+	}
+	rect := func(selectors ...string) []float64 {
+		values := page.MustEval(`(selectors) => {
+			const rects = selectors.map((s) => document.querySelector(s).getBoundingClientRect());
+			return [Math.min(...rects.map((r) => r.left)), Math.min(...rects.map((r) => r.top)), Math.max(...rects.map((r) => r.right)), Math.max(...rects.map((r) => r.bottom))];
+		}`, selectors).Arr()
+		return []float64{values[0].Num(), values[1].Num(), values[2].Num(), values[3].Num()}
+	}
+	boxCovers := func(what string, selectors ...string) {
+		t.Helper()
+		got, want := box(), rect(selectors...)
+		for index := range got {
+			if diff := got[index] - want[index]; diff > 1 || diff < -1 {
+				t.Errorf("%s: the highlight is %v, want %v", what, got, want)
+				return
+			}
+		}
+	}
+	keys := func(keys ...input.Key) {
+		t.Helper()
+		if err := page.KeyActions().Press(keys[:len(keys)-1]...).Type(keys[len(keys)-1]).Do(); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	keys(input.AltLeft, input.ShiftLeft, input.KeyK)
+	until(t, page, "pick mode", `() => !!document.querySelector("[data-ktml-picker]")`, timeout)
+
+	// A plain-markup badge in a row: the slotted page has its own level.
+	moveTo(status)
+	waitSelected("hover", "span.status.state-open")
+	if got := evalString(t, page, labelPath); !strings.HasPrefix(got, "Layout › Planner › section#planner.planner › div.planner-row › span.status.state-open") {
+		t.Errorf("label = %q", got)
+	}
+	waitSource("hover", "web/planner.ktml:10:5  in Planner")
+	boxCovers("the status badge", status)
+
+	// Out element by element, then component by component, and back.
+	keys(input.AltLeft, input.ShiftLeft, input.ArrowUp)
+	waitSelected("up", "div.planner-row")
+	waitSource("up", "web/planner.ktml:8:4")
+	boxCovers("the row", `#planner .planner-row[data-id="j1"]`)
+	keys(input.AltLeft, input.ShiftLeft, input.ArrowUp)
+	waitSelected("up again", "section#planner.planner")
+	keys(input.AltLeft, input.ShiftLeft, input.ArrowUp)
+	waitSelected("up to the page", "Planner")
+	waitSource("the page's declaration", "web/planner.ktml:4:1")
+	// The slotted page's box is its whole content range.
+	boxCovers("the slotted page", "#planner-title", "#planner")
+	keys(input.AltLeft, input.ShiftLeft, input.ArrowUp)
+	waitSelected("up to the layout", "Layout")
+	keys(input.AltLeft, input.ShiftLeft, input.ArrowUp)
+	waitSelected("the outermost stays", "Layout")
+	for range 3 {
+		keys(input.AltLeft, input.ShiftLeft, input.ArrowDown)
+	}
+	waitSelected("down", "div.planner-row")
+	if err := page.Keyboard.Press(input.ShiftLeft); err != nil {
+		t.Fatal(err)
+	}
+	if err := page.Mouse.Scroll(0, 100, 1); err != nil {
+		t.Fatal(err)
+	}
+	if err := page.Keyboard.Release(input.ShiftLeft); err != nil {
+		t.Fatal(err)
+	}
+	waitSelected("Shift+wheel down", "span.status.state-open")
+
+	// A component instance inside the slotted page keeps the page's level.
+	moveTo(`#planner .planner-row[data-id="j1"] span.badge`)
+	waitSelected("a Badge in a row", "Badge")
+	if got := evalString(t, page, labelPath); !strings.HasPrefix(got, "Layout › Planner › Badge") {
+		t.Errorf("badge label = %q", got)
+	}
+	// The layout's own markup, outside the slot.
+	moveTo("#page-title")
+	waitSelected("the layout title", "h1#page-title")
+	if got := evalString(t, page, labelPath); !strings.HasPrefix(got, "Layout › html › body › header › h1#page-title") {
+		t.Errorf("layout label = %q", got)
+	}
+	waitSource("the layout title", "web/layout.ktml:11:5  in Layout")
+
+	// C copies the selection's source.
+	moveTo(status)
+	waitSource("back on the badge", "web/planner.ktml:10:5")
+	page.Keyboard.MustType(input.KeyC)
+	until(t, page, "copied", `() => (`+labelPath+`)().includes("web/planner.ktml:10:5")`, timeout)
+	if copied, err := page.Eval(`() => navigator.clipboard.readText()`); err == nil && copied.Value.String() != "web/planner.ktml:10:5" {
+		t.Errorf("clipboard = %q", copied.Value.String())
+	}
+
+	// Ctrl+click opens the source in the configured editor; pick mode stays.
+	x, y := center(status)
+	page.Mouse.MustMoveTo(x, y)
+	if err := page.Keyboard.Press(input.ControlLeft); err != nil {
+		t.Fatal(err)
+	}
+	page.Mouse.MustClick(proto.InputMouseButtonLeft)
+	if err := page.Keyboard.Release(input.ControlLeft); err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.Join(app.dir, "web", "planner.ktml") + ":10:5"
+	deadline := time.Now().Add(timeout)
+	for {
+		content, _ := os.ReadFile(opened)
+		if strings.TrimSpace(string(content)) != "" {
+			if got := strings.TrimSpace(string(content)); !strings.HasSuffix(got, string(filepath.Separator)+filepath.Join("web", "planner.ktml")+":10:5") {
+				t.Errorf("the editor opened %q, want %q", got, want)
+			}
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("the editor never ran; label %q", evalString(t, page, labelPath))
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	if !page.MustEval(`() => !!document.querySelector("[data-ktml-picker]")`).Bool() {
+		t.Error("Ctrl+click left pick mode")
+	}
+
+	// A click opens the innermost component, the slotted page, creating its
+	// story from its types.
+	page.Mouse.MustMoveTo(x+1, y)
+	page.Mouse.MustMoveTo(x, y)
+	waitSelected("before the click", "span.status.state-open")
+	page.Mouse.MustClick(proto.InputMouseButtonLeft)
+	deadline = time.Now().Add(timeout)
+	for {
+		found := false
+		for _, other := range browser.MustPages() {
+			if other.TargetID == page.TargetID {
+				continue
+			}
+			if info, err := other.Info(); err == nil && strings.HasPrefix(info.URL, explorerURL+"/?story=") && strings.Contains(info.URL, "Planner.") {
+				found = true
+			}
+		}
+		if found {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("the Explorer never opened Planner; label %q", evalString(t, page, labelPath))
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 }

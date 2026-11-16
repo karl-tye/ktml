@@ -37,6 +37,10 @@ func Routes() http.Handler {
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		render(w, r, web.Dashboard{Board: board()})
 	})
+	// Go passes a page component into the layout's content slot.
+	mux.HandleFunc("GET /planner", func(w http.ResponseWriter, r *http.Request) {
+		render(w, r, web.Layout{Title: "Planner", Children: web.Planner{Board: board()}})
+	})
 	mux.HandleFunc("GET /activity", func(w http.ResponseWriter, r *http.Request) {
 		render(w, r, web.Activity{Entries: []web.Entry{
 			{Id: "a1", Kind: "call", Text: "Customer rang"},
