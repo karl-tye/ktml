@@ -9,6 +9,9 @@ type Picker struct {
 	Hotkey string `json:"hotkey"`
 	// Explorer is the Component Explorer's base URL.
 	Explorer string `json:"explorer"`
+	// Editor reports that dev.picker.editor is set, so Ctrl+click opens a
+	// picked element's source rather than copying its location.
+	Editor bool `json:"editor,omitempty"`
 }
 
 // SetPicker adds the component picker to the client of every page proxied
@@ -32,19 +35,25 @@ func pickerTag(picker *Picker) string {
 // pickerScript is the component picker. The hotkey toggles pick mode; Esc
 // leaves it. In pick mode:
 //
-//   - hovering highlights the innermost component instance under the
-//     pointer (its data-ktml-i element or ktml:c range; ADR-0004) and labels
-//     it with its component chain, the current level in bold;
-//   - Shift+wheel up selects the enclosing instance and down goes back
-//     toward the innermost, one level per gesture (Alt+Shift+Up/Down do the
-//     same); the page does not scroll; moving to another instance resets
-//     the level;
-//   - a click opens the selected component's story in one reused Explorer
-//     tab, after ktml dev creates a type-derived story if it has none. The
-//     click, and the pointer events around it, never reach the page.
+//   - hovering highlights the innermost element under the pointer and labels
+//     it with the component chain (each instance's data-ktml-i element or
+//     ktml:c range; ADR-0004) and then the Element Path inside the innermost
+//     instance, the current level in bold, with that level's KTML source
+//     (file:line:column) when ktml dev can locate it;
+//   - Shift+wheel up selects the enclosing element, up to the instance, and
+//     then the enclosing instances; down goes back toward the innermost
+//     element, one level per gesture (Alt+Shift+Up/Down do the same); the
+//     page does not scroll; moving to another element resets the level;
+//   - a click opens the innermost component's story (or the selected
+//     component's, on a component level) in one reused Explorer tab, after
+//     ktml dev creates a type-derived story if it has none; Ctrl+click
+//     (Cmd+click) opens the selected level's source in dev.picker.editor,
+//     or copies file:line:column without one, as C does. Clicks, and the
+//     pointer events around them, never reach the page.
 //
-// The page's identities go to ktml dev's /__ktml/picker/ routes, which name
-// their components; no props leave the application.
+// The page's identities and Element Paths (tags, ids, and classes) go to
+// ktml dev's /__ktml/picker/ routes, which name their components and
+// sources; no props or text leave the application.
 const pickerScript = `<script data-ktml-client>
 (() => {
 	const options = window.__ktmlPicker;
@@ -69,18 +78,18 @@ const pickerScript = `<script data-ktml-client>
 	const own = (node) => node && node.nodeType === Node.ELEMENT_NODE && node.closest("[data-ktml-client]");
 
 	// instancesAt lists the marked instances that contain node, innermost
-	// first: elements with data-ktml-i, and ktml:c ranges among the
-	// preceding siblings at each level.
+	// first, each with its top: the node at the instance's level that holds
+	// node (its data-ktml-i element, or an element of its ktml:c range).
 	const instancesAt = (node) => {
 		const found = [];
 		for (let current = node; current && current !== document; current = current.parentNode) {
-			if (current.nodeType === Node.ELEMENT_NODE && current.hasAttribute("data-ktml-i")) found.push(current.getAttribute("data-ktml-i"));
+			if (current.nodeType === Node.ELEMENT_NODE && current.hasAttribute("data-ktml-i")) found.push({ identity: current.getAttribute("data-ktml-i"), top: current });
 			let depth = 0;
 			for (let sibling = current.previousSibling; sibling; sibling = sibling.previousSibling) {
 				if (sibling.nodeType !== Node.COMMENT_NODE) continue;
 				if (sibling.data.startsWith(END)) depth++;
 				else if (sibling.data.startsWith(BEGIN)) {
-					if (depth === 0) found.push(decode(sibling.data.slice(BEGIN.length)));
+					if (depth === 0) found.push({ identity: decode(sibling.data.slice(BEGIN.length)), top: current });
 					else depth--;
 				}
 			}
@@ -152,9 +161,37 @@ const pickerScript = `<script data-ktml-client>
 		return null;
 	};
 
+	// An element's step of an Element Path, and its label.
+	const stepOf = (element) => {
+		const step = { tag: element.localName };
+		if (element.id) step.id = element.id;
+		if (element.classList.length) step.classes = Array.from(element.classList);
+		return step;
+	};
+	const nameOf = (element) => element.localName + (element.id ? "#" + element.id : "") +
+		Array.from(element.classList).slice(0, 2).map((name) => "." + name).join("");
+
+	// locations maps an identity and Element Path to the source of each of
+	// its elements: undefined until asked, null while ktml dev answers.
+	const locations = new Map();
+	const locateKey = (identity, steps) => identity + "\n" + JSON.stringify(steps);
+	const locate = (identity, steps) => {
+		const key = locateKey(identity, steps);
+		if (locations.has(key)) return;
+		locations.set(key, null);
+		post("locate", { identity, path: steps }).then((answer) => {
+			locations.set(key, answer.locations || []);
+		}).catch((error) => {
+			console.error("[KTML] The picker could not locate an element's source", error);
+			locations.set(key, []);
+		}).finally(render);
+	};
+
 	let host = null;
 	let box = null;
 	let label = null;
+	let source = null;
+	let hint = null;
 	let cursor = null;
 	const show = () => {
 		host = document.createElement("div");
@@ -164,13 +201,18 @@ const pickerScript = `<script data-ktml-client>
 		const root = host.attachShadow({ mode: "open" });
 		// Styles go through the CSSOM, which a page's style-src does not
 		// restrict, rather than style attributes or a style element.
-		root.innerHTML = "<div data-box></div><div data-label><div data-path></div><div data-hint>Click to open in the Explorer · Shift+scroll or Alt+Shift+↑↓ to walk up and down · Esc to exit</div></div>";
+		root.innerHTML = "<div data-box></div><div data-label><div data-path></div><div data-source></div><div data-hint></div></div>";
 		root.querySelector("[data-box]").style.cssText = "position:fixed;display:none;box-sizing:border-box;border:2px solid #6366f1;background:rgba(99,102,241,.12);border-radius:3px";
 		root.querySelector("[data-label]").style.cssText = "position:fixed;left:8px;bottom:8px;max-width:calc(100vw - 16px);box-sizing:border-box;padding:6px 10px;border-radius:6px;background:#1e1b4b;color:#e0e7ff;font:12px/1.4 ui-sans-serif,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.3)";
+		root.querySelector("[data-source]").style.cssText = "font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#c7d2fe";
 		root.querySelector("[data-hint]").style.opacity = ".7";
 		box = root.querySelector("[data-box]");
 		label = root.querySelector("[data-path]");
-		label.textContent = "KTML picker: point at a component";
+		source = root.querySelector("[data-source]");
+		hint = root.querySelector("[data-hint]");
+		hint.textContent = "Click to open the component in the Explorer · " + (options.editor ? "Ctrl+click to open the source in your editor" : "Ctrl+click") +
+			" or C to copy file:line · Shift+scroll or Alt+Shift+↑↓ to walk up and down · Esc to exit";
+		label.textContent = "KTML picker: point at an element";
 		document.documentElement.appendChild(host);
 		cursor = new CSSStyleSheet();
 		cursor.replaceSync("*{cursor:crosshair!important}");
@@ -179,13 +221,18 @@ const pickerScript = `<script data-ktml-client>
 	const hide = () => {
 		if (host) host.remove();
 		if (cursor) document.adoptedStyleSheets = document.adoptedStyleSheets.filter((sheet) => sheet !== cursor);
-		host = box = label = cursor = null;
+		host = box = label = source = hint = cursor = null;
 	};
 
 	let active = false;
 	// hovered is the innermost instance under the pointer ("" outside every
-	// instance); level indexes its chain, null for the innermost.
+	// instance, null before any); top is its node holding the pointer, and
+	// elements the Element Path from there down to the pointer's element.
+	// level indexes the levels (the chain, then the elements below the
+	// instance), null for the innermost.
 	let hovered = null;
+	let top = null;
+	let elements = [];
 	let level = null;
 	let target = null;
 
@@ -194,6 +241,19 @@ const pickerScript = `<script data-ktml-client>
 		if (hovered === "") return { chain: documentChain(), pending: !!resolving };
 		const chain = chains.get(hovered);
 		return { chain: chain || null, pending: chain === undefined };
+	};
+
+	// levels lists the selectable levels: each component of the chain, then
+	// each element of the Element Path below the instance's own element.
+	const levelsOf = (chain) => {
+		const levels = chain.map((entry) => ({ entry }));
+		const instance = chain[chain.length - 1];
+		const marked = top && top.nodeType === Node.ELEMENT_NODE && top.getAttribute("data-ktml-i") === instance.identity;
+		elements.forEach((element, index) => {
+			if (index === 0 && marked) return;
+			levels.push({ entry: instance, element, index });
+		});
+		return levels;
 	};
 
 	const rectOf = (identity) => {
@@ -214,51 +274,81 @@ const pickerScript = `<script data-ktml-client>
 		return new DOMRect(0, 0, document.documentElement.clientWidth, window.innerHeight);
 	};
 
+	// sourceOf is the selected level's source: an element's located
+	// declaration, or a component's; undefined while ktml dev answers.
+	const sourceOf = (selected) => {
+		if (!selected.element) return (components[selected.entry.component] || {}).source || null;
+		const found = locations.get(locateKey(selected.entry.identity, elements.map(stepOf)));
+		if (found === null || found === undefined) return undefined;
+		return found[selected.index] || null;
+	};
+	const sourceText = (location) => location.file + ":" + location.line + ":" + location.column;
+
 	const render = () => {
 		if (!active || !label) return;
 		const { chain, pending } = currentChain();
 		target = null;
+		source.textContent = "";
 		if (!chain || !chain.length) {
 			box.style.display = "none";
-			label.textContent = pending ? "KTML picker: …" : hovered === null ? "KTML picker: point at a component" : "KTML picker: no component here";
+			label.textContent = pending ? "KTML picker: …" : hovered === null ? "KTML picker: point at an element" : "KTML picker: no component here";
 			return;
 		}
-		if (level === null || level >= chain.length) level = chain.length - 1;
+		const levels = levelsOf(chain);
+		if (elements.length) locate(chain[chain.length - 1].identity, elements.map(stepOf));
+		if (level === null || level >= levels.length) level = levels.length - 1;
 		if (level < 0) level = 0;
-		target = chain[level];
-		const rect = rectOf(target.identity);
+		target = levels[level];
+		const rect = target.element ? target.element.getBoundingClientRect() : rectOf(target.entry.identity);
 		Object.assign(box.style, { display: "block", left: rect.left + "px", top: rect.top + "px", width: Math.max(rect.width, 2) + "px", height: Math.max(rect.height, 2) + "px" });
 		label.textContent = "";
-		chain.forEach((entry, index) => {
+		levels.forEach((entry, index) => {
 			if (index) label.appendChild(document.createTextNode(" › "));
-			const name = (components[entry.component] || {}).name || entry.component;
+			const name = entry.element ? nameOf(entry.element) : (components[entry.entry.component] || {}).name || entry.entry.component;
 			const part = document.createElement(index === level ? "b" : "span");
 			part.textContent = name;
 			if (index === level) part.style.color = "#fff";
+			else if (entry.element) part.style.opacity = ".85";
 			label.appendChild(part);
 		});
-		if (!(components[target.component] || {}).story) {
+		const owner = target.element ? chain[chain.length - 1] : target.entry;
+		if (!(components[owner.component] || {}).story) {
 			const note = document.createElement("span");
 			note.style.opacity = ".7";
 			note.textContent = "  (no story yet: a click creates one from its types)";
 			label.appendChild(note);
 		}
+		const location = sourceOf(target);
+		if (location === undefined) source.textContent = "…";
+		else if (location) source.textContent = sourceText(location) + (target.element ? "  in " + location.component : "");
+		else source.textContent = "no KTML source for this element";
 	};
 
 	const hover = (node) => {
-		if (own(node)) return;
+		if (node && node.nodeType !== Node.ELEMENT_NODE) node = node.parentElement;
+		if (!node || own(node)) return;
 		const found = instancesAt(node);
 		let innermost = "";
-		for (const identity of found) {
-			const chain = chains.get(identity);
+		let instanceTop = document.documentElement;
+		for (const instance of found) {
+			const chain = chains.get(instance.identity);
 			if (chain === undefined) resolve();
 			if (chain !== null) {
-				innermost = identity;
+				innermost = instance.identity;
+				instanceTop = instance.top;
 				break;
 			}
 		}
-		if (innermost !== hovered) {
+		const path = [];
+		for (let current = node; current; current = current.parentElement) {
+			path.unshift(current);
+			if (current === instanceTop) break;
+		}
+		if (path[0] !== instanceTop) path.length = 0;
+		if (innermost !== hovered || path[path.length - 1] !== elements[elements.length - 1]) {
 			hovered = innermost;
+			top = instanceTop;
+			elements = path;
 			level = null;
 		}
 		render();
@@ -267,8 +357,9 @@ const pickerScript = `<script data-ktml-client>
 	const step = (direction) => {
 		const { chain } = currentChain();
 		if (!chain || !chain.length) return;
-		if (level === null) level = chain.length - 1;
-		level = Math.min(chain.length - 1, Math.max(0, level + direction));
+		const count = levelsOf(chain).length;
+		if (level === null) level = count - 1;
+		level = Math.min(count - 1, Math.max(0, level + direction));
 		render();
 	};
 
@@ -299,18 +390,58 @@ const pickerScript = `<script data-ktml-client>
 		});
 	};
 
+	// copy puts the selection's file:line:column on the clipboard.
+	const copy = () => {
+		const location = target && sourceOf(target);
+		if (!location) {
+			flash(location === undefined ? "KTML picker: still locating the source…" : "KTML picker: no KTML source for this element");
+			return;
+		}
+		const text = sourceText(location);
+		const done = () => flash("KTML picker: copied " + text);
+		if (navigator.clipboard && navigator.clipboard.writeText) {
+			navigator.clipboard.writeText(text).then(done, () => flash("KTML picker: " + text + " (the clipboard is unavailable)"));
+		} else {
+			flash("KTML picker: " + text);
+		}
+	};
+
+	// edit asks ktml dev to open the selection's source in the editor. It
+	// names the selection, never a file: ktml dev locates the source itself.
+	const edit = () => {
+		if (!target) return;
+		if (!options.editor) {
+			copy();
+			return;
+		}
+		const body = target.element
+			? { identity: target.entry.identity, path: elements.slice(0, target.index + 1).map(stepOf) }
+			: { component: target.entry.component };
+		post("edit", body).then((answer) => {
+			flash("KTML picker: opened " + sourceText(answer.location));
+		}).catch((error) => {
+			console.error("[KTML] The picker could not open the source", error);
+			flash("KTML picker: " + error.message);
+		});
+	};
+
 	const start = () => {
 		if (active) return;
 		active = true;
 		hovered = null;
+		top = null;
+		elements = [];
 		level = null;
 		chains.clear();
+		locations.clear();
 		show();
 		resolve();
 	};
 	const stop = () => {
 		active = false;
 		hovered = null;
+		top = null;
+		elements = [];
 		hide();
 	};
 
@@ -356,6 +487,9 @@ const pickerScript = `<script data-ktml-client>
 		} else if (event.altKey && event.shiftKey && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
 			swallow(event);
 			step(event.key === "ArrowUp" ? -1 : 1);
+		} else if ((event.key === "c" || event.key === "C") && !event.ctrlKey && !event.altKey && !event.metaKey) {
+			swallow(event);
+			copy();
 		}
 	}, true);
 	window.addEventListener("pointermove", (event) => {
@@ -369,7 +503,9 @@ const pickerScript = `<script data-ktml-client>
 		if (!active) return;
 		swallow(event);
 		hover(event.composedPath()[0] || event.target);
-		if (target) open(target);
+		if (!target) return;
+		if (event.ctrlKey || event.metaKey) edit();
+		else open(target.entry);
 	}, true);
 	window.addEventListener("scroll", () => render(), true);
 	window.addEventListener("resize", () => render());

@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/karl-tye/ktml/internal/compiler"
 	"github.com/karl-tye/ktml/internal/config"
 	"github.com/karl-tye/ktml/internal/explorer"
 )
@@ -35,7 +36,12 @@ type Explorer interface {
 	Describe(componentID string) (explorer.ComponentInfo, bool)
 	CallTarget(callerID, site string) (string, bool)
 	EnsureStory(ctx context.Context, componentID string) (key string, created bool, err error)
+	Locate(componentID string, links []explorer.Link, path []compiler.ElementStep) []explorer.Location
+	Declaration(componentID string) (explorer.Location, bool)
 }
+
+// Editor opens a located source in the developer's editor.
+type Editor func(location explorer.Location) error
 
 // Roots names the components of the application's root instances, by the
 // N of "@N" (control.Client.Components).
@@ -46,12 +52,19 @@ type Handler struct {
 	explorer    Explorer
 	roots       Roots
 	explorerURL string
+	editor      Editor
 }
 
 // New returns the picker's handler. explorerURL is the Explorer's base URL,
 // such as http://127.0.0.1:7332.
 func New(explorer Explorer, roots Roots, explorerURL string) *Handler {
 	return &Handler{explorer: explorer, roots: roots, explorerURL: strings.TrimSuffix(explorerURL, "/")}
+}
+
+// SetEditor lets POST /__ktml/picker/edit open sources in editor. Call it
+// before the handler serves.
+func (h *Handler) SetEditor(editor Editor) {
+	h.editor = editor
 }
 
 // resolveRequest is the body of POST /__ktml/picker/resolve: the Render
@@ -77,6 +90,34 @@ type componentInfo struct {
 	Name     string `json:"name"`
 	Document bool   `json:"document,omitempty"`
 	Story    bool   `json:"story,omitempty"`
+	// Source is where the component is declared.
+	Source *explorer.Location `json:"source,omitempty"`
+}
+
+// locateRequest is the body of POST /__ktml/picker/locate: an instance's
+// Render Identity and the Element Path from the instance's top element down
+// to a picked element.
+type locateRequest struct {
+	Identity string                 `json:"identity"`
+	Path     []compiler.ElementStep `json:"path"`
+}
+
+// locateResponse is the source of every element of the path, or null.
+type locateResponse struct {
+	Locations []*explorer.Location `json:"locations"`
+}
+
+// editRequest is the body of POST /__ktml/picker/edit: the picked element,
+// as a locate request, or a component. It never names a file: ktml dev
+// locates the source itself.
+type editRequest struct {
+	locateRequest
+	Component string `json:"component,omitempty"`
+}
+
+// editResponse is the source the editor opened.
+type editResponse struct {
+	Location explorer.Location `json:"location"`
 }
 
 // openRequest is the body of POST /__ktml/picker/open.
@@ -90,12 +131,15 @@ type openResponse struct {
 	Created bool   `json:"created,omitempty"`
 }
 
-// maxIdentities bounds one resolve request.
-const maxIdentities = 20000
+// maxIdentities bounds one resolve request, and maxPath an Element Path.
+const (
+	maxIdentities = 20000
+	maxPath       = 256
+)
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	route := strings.TrimPrefix(r.URL.Path, Prefix)
-	if route != "resolve" && route != "open" {
+	if route != "resolve" && route != "open" && route != "locate" && route != "edit" {
 		http.NotFound(w, r)
 		return
 	}
@@ -130,7 +174,105 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		writeJSON(w, openResponse{URL: h.explorerURL + explorer.Prefix + "open?" + url.Values{"component": {request.Component}}.Encode(), Created: created})
+	case "locate":
+		var request locateRequest
+		if err := json.Unmarshal(body, &request); err != nil || len(request.Path) == 0 || len(request.Path) > maxPath {
+			http.Error(w, "invalid request", http.StatusBadRequest)
+			return
+		}
+		response := locateResponse{Locations: make([]*explorer.Location, len(request.Path))}
+		for index, location := range h.locate(r.Context(), request) {
+			if location.File != "" {
+				response.Locations[index] = &location
+			}
+		}
+		writeJSON(w, response)
+	case "edit":
+		var request editRequest
+		if err := json.Unmarshal(body, &request); err != nil || len(request.Path) > maxPath {
+			http.Error(w, "invalid request", http.StatusBadRequest)
+			return
+		}
+		if h.editor == nil {
+			http.Error(w, "no editor is configured: set dev.picker.editor", http.StatusNotImplemented)
+			return
+		}
+		var location explorer.Location
+		switch {
+		case request.Component != "":
+			location, _ = h.explorer.Declaration(request.Component)
+		case request.Identity != "" && len(request.Path) > 0:
+			located := h.locate(r.Context(), request.locateRequest)
+			location = located[len(located)-1]
+		}
+		if location.File == "" {
+			http.Error(w, "the selection has no known KTML source", http.StatusUnprocessableEntity)
+			return
+		}
+		if err := h.editor(location); err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		writeJSON(w, editResponse{Location: location})
 	}
+}
+
+// locate finds the source of every element of a path inside the instance
+// the identity names. The calls that supplied the instance's content, and
+// outward each caller's, come from the identity's frames.
+func (h *Handler) locate(ctx context.Context, request locateRequest) []explorer.Location {
+	chain := h.resolve(ctx, []string{request.Identity}).Chains[request.Identity]
+	_, frames, err := parseIdentity(request.Identity)
+	if len(chain) == 0 || err != nil {
+		return make([]explorer.Location, len(request.Path))
+	}
+	return h.explorer.Locate(chain[len(chain)-1].Component, contentLinks(frames), request.Path)
+}
+
+// contentLinks returns the call that rendered the instance with these
+// Render Identity frames, then the call that rendered that caller's
+// instance, and so on outward, while each is a KTML call.
+func contentLinks(frames []frame) []explorer.Link {
+	var links []explorer.Link
+	for len(frames) > 0 {
+		last := frames[len(frames)-1]
+		if !strings.HasPrefix(last.source, "c") {
+			break
+		}
+		links = append(links, explorer.Link{Caller: last.component, Site: last.source})
+		owner, ok := ownerFrames(frames[:len(frames)-1])
+		if !ok {
+			break
+		}
+		frames = owner
+	}
+	return links
+}
+
+// ownerFrames trims identity frames to those of the instance whose source
+// renders after them: a call frame starts the called instance; a repetition
+// item stays in its component's source; content at an outlet is the source
+// of the call that rendered the outlet's instance. It reports false when that
+// is content built in Go.
+func ownerFrames(frames []frame) ([]frame, bool) {
+	for len(frames) > 0 {
+		last := frames[len(frames)-1]
+		switch last.source[0] {
+		case 'c':
+			return frames, true
+		case 'r':
+			frames = frames[:len(frames)-1]
+		case 'o':
+			instance, ok := ownerFrames(frames[:len(frames)-1])
+			if !ok || len(instance) == 0 {
+				return nil, false
+			}
+			frames = instance[:len(instance)-1]
+		default:
+			return nil, false
+		}
+	}
+	return frames, true
 }
 
 // checkRequest admits only a same-origin JSON POST to a loopback Host. A
@@ -273,7 +415,11 @@ func (h *Handler) resolve(ctx context.Context, identities []string) resolveRespo
 		if !ok {
 			info.Name = component[strings.LastIndexByte(component, '.')+1:]
 		}
-		response.Components[component] = componentInfo{Name: info.Name, Document: info.Document, Story: info.Story}
+		entry := componentInfo{Name: info.Name, Document: info.Document, Story: info.Story}
+		if source, ok := h.explorer.Declaration(component); ok {
+			entry.Source = &source
+		}
+		response.Components[component] = entry
 	}
 	for identity, entry := range byIdentity {
 		root := rootComponent[entry.root]

@@ -994,9 +994,14 @@ func devCmd() {
 		fmt.Fprintf(os.Stderr, "WARNING: dev.proxy_target %s is not loopback (dev.allow_remote_proxy_target is set); ktml dev sends the app's development control token to it\n", cfg.Dev.ProxyTarget)
 	}
 	if cfg.Dev.PickerEnabled() && explorerRun != nil {
-		pickerHandler.Store(picker.New(explorerRun.server, controlClient.Components, explorerRun.url))
-		lrServer.SetPicker(livereload.Picker{Hotkey: cfg.Dev.PickerHotkey(), Explorer: explorerRun.url})
-		fmt.Fprintf(os.Stdout, "KTML component picker: press %s on a page to pick a component and open it in the Explorer\n", cfg.Dev.PickerHotkey())
+		handler := picker.New(explorerRun.server, controlClient.Components, explorerRun.url)
+		editor := cfg.Dev.PickerEditor()
+		if editor != nil {
+			handler.SetEditor(picker.CommandEditor(workspaceRoot, editor))
+		}
+		pickerHandler.Store(handler)
+		lrServer.SetPicker(livereload.Picker{Hotkey: cfg.Dev.PickerHotkey(), Explorer: explorerRun.url, Editor: editor != nil})
+		fmt.Fprintf(os.Stdout, "KTML component picker: press %s on a page to pick an element and open its component in the Explorer, or Ctrl+click it to open its source\n", cfg.Dev.PickerHotkey())
 	}
 	lrServer.OnSession(func(session string, connected bool) {
 		go func() {
