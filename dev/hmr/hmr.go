@@ -26,6 +26,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -188,6 +189,44 @@ type recorderKey struct{}
 type recorder struct {
 	mu  sync.Mutex
 	ids map[string]bool
+	// outlets names the component of each instance rendered at a content
+	// outlet: a component value built in Go, such as a page passed to a
+	// layout, whose Render Identity ends with the outlet's frame.
+	outlets map[string]string
+}
+
+// addOutlet records the component rendered at an outlet's identity.
+func (r *recorder) addOutlet(identity, id string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.outlets == nil {
+		r.outlets = make(map[string]string)
+	}
+	if len(r.outlets) < maxOutlets {
+		r.outlets[identity] = id
+	}
+}
+
+// maxOutlets bounds the outlet instances recorded for one root.
+const maxOutlets = 1024
+
+// outletFrame matches a Render Identity whose last frame is a content
+// outlet, <component>#o<n>. A quoted repetition key ends with a quote, so it
+// cannot match.
+var outletFrame = regexp.MustCompile(`#o[0-9]+$`)
+
+// outletComponents returns a copy of the recorded outlet components.
+func (r *recorder) outletComponents() map[string]string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if len(r.outlets) == 0 {
+		return nil
+	}
+	outlets := make(map[string]string, len(r.outlets))
+	for identity, id := range r.outlets {
+		outlets[identity] = id
+	}
+	return outlets
 }
 
 func (r *recorder) add(id string) {
@@ -228,6 +267,9 @@ func (h *HMR) RenderComponent(ctx context.Context, w io.Writer, component ktml.C
 		if rec, ok := ctx.Value(recorderKey{}).(*recorder); ok {
 			if id := componentID(component); id != "" {
 				rec.add(id)
+				if scope := dev.Scope(ctx); outletFrame.MatchString(scope) {
+					rec.addOutlet(scope, id)
+				}
 			}
 		}
 		return h.render(ctx, w, component, generated)
@@ -276,6 +318,7 @@ func (h *HMR) track(session, id string, component ktml.Component, rec *recorder)
 		Props:       component,
 		Generation:  h.generation.Load(),
 		Depends:     h.dependencies(componentID, rec),
+		Outlets:     rec.outletComponents(),
 		Size:        estimateSize(component),
 	})
 }
@@ -347,24 +390,40 @@ type SessionRequest struct {
 }
 
 // ComponentsRequest is the body of POST /__ktml/dev/components: root
-// instance IDs, the N of Render Identities "@N", that the component picker
-// found on a page.
+// instance IDs, the N of Render Identities "@N", and Render Identities of
+// instances at content outlets, that the component picker found on a page.
 type ComponentsRequest struct {
-	Instances []string `json:"instances"`
+	Instances  []string `json:"instances"`
+	Identities []string `json:"identities,omitempty"`
 }
 
-// ComponentsResponse names the component of each live root instance asked
-// for. It never carries props.
+// ComponentsResponse names the component of each live root instance, and of
+// each instance at an outlet, asked for. It never carries props.
 type ComponentsResponse struct {
 	Components map[string]string `json:"components"`
+	Outlets    map[string]string `json:"outlets,omitempty"`
 }
 
-// Components names the components of live root instances.
-func (h *HMR) Components(instances []string) ComponentsResponse {
+// Components names the components of live root instances, and of the
+// component values that those roots rendered at content outlets.
+func (h *HMR) Components(instances, identities []string) ComponentsResponse {
 	response := ComponentsResponse{Components: make(map[string]string)}
 	for _, id := range instances {
 		if instance, ok := h.registry.Instance(id); ok && instance.ComponentID != "" {
 			response.Components[id] = instance.ComponentID
+		}
+	}
+	for _, identity := range identities {
+		root, _, _ := strings.Cut(strings.TrimPrefix(identity, "@"), " ")
+		instance, ok := h.registry.Instance(root)
+		if !ok {
+			continue
+		}
+		if id := instance.Outlets[identity]; id != "" {
+			if response.Outlets == nil {
+				response.Outlets = make(map[string]string)
+			}
+			response.Outlets[identity] = id
 		}
 	}
 	return response
@@ -401,7 +460,7 @@ func (h *HMR) serveControl(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "invalid request", http.StatusBadRequest)
 			return
 		}
-		writeJSON(w, http.StatusOK, h.Components(request.Instances))
+		writeJSON(w, http.StatusOK, h.Components(request.Instances, request.Identities))
 	case "session":
 		var request SessionRequest
 		if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&request); err != nil || !validSession(request.Session) {

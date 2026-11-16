@@ -2,6 +2,7 @@ package control
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -102,14 +103,24 @@ func TestComponents_GIVENApplicationResponses_WHENCalled_THENReturnsTheNamesOrUn
 			http.NotFound(w, r)
 			return
 		}
+		var request hmr.ComponentsRequest
+		_ = json.NewDecoder(r.Body).Decode(&request)
+		if len(request.Identities) == 1 && request.Identities[0] == "@1 example.com/web.Layout#o0" {
+			_, _ = w.Write([]byte(`{"components":{"1":"example.com/web.Layout"},"outlets":{"@1 example.com/web.Layout#o0":"example.com/web.Page"}}`))
+			return
+		}
 		_, _ = w.Write([]byte(`{"components":{"1":"example.com/web.Page"}}`))
 	}))
 	defer app.Close()
-	components, err := New(app.URL, "secret").Components(context.Background(), []string{"1"})
-	if err != nil || components["1"] != "example.com/web.Page" {
-		t.Errorf("Components() = %v, %v", components, err)
+	components, outlets, err := New(app.URL, "secret").Components(context.Background(), []string{"1"}, nil)
+	if err != nil || components["1"] != "example.com/web.Page" || len(outlets) != 0 {
+		t.Errorf("Components() = %v, %v, %v", components, outlets, err)
 	}
-	if _, err := New(app.URL, "wrong").Components(context.Background(), []string{"1"}); !errors.Is(err, ErrUnavailable) {
+	components, outlets, err = New(app.URL, "secret").Components(context.Background(), []string{"1"}, []string{"@1 example.com/web.Layout#o0"})
+	if err != nil || components["1"] != "example.com/web.Layout" || outlets["@1 example.com/web.Layout#o0"] != "example.com/web.Page" {
+		t.Errorf("Components() with an outlet = %v, %v, %v", components, outlets, err)
+	}
+	if _, _, err := New(app.URL, "wrong").Components(context.Background(), []string{"1"}, nil); !errors.Is(err, ErrUnavailable) {
 		t.Errorf("without the channel: %v, want ErrUnavailable", err)
 	}
 }

@@ -343,3 +343,34 @@ func TestComponents_GIVENLiveRoots_WHENAsked_THENNamesTheirComponentsOnly(t *tes
 		t.Errorf("wrong token: status %d, want 404", response.Code)
 	}
 }
+
+// TestComponents_GIVENGoBuiltContentAtAnOutlet_WHENAsked_THENNamesItsComponent
+// names a component value that Go passed as content, such as a page passed
+// to a layout: its instance's Render Identity ends with the outlet's frame,
+// which the program cannot resolve, so the root's render records it.
+func TestComponents_GIVENGoBuiltContentAtAnOutlet_WHENAsked_THENNamesItsComponent(t *testing.T) {
+	f := newFixture(t, func(w http.ResponseWriter, r *http.Request) {
+		_ = Layout{Children: Badge{Label: "child"}}.Render(r.Context(), w)
+	})
+	if body := f.get(t, "").Body.String(); !strings.Contains(body, `data-ktml-i="@1 hmr_test.Layout#o0"`) {
+		t.Fatalf("body = %s", body)
+	}
+	body, _ := json.Marshal(hmr.ComponentsRequest{Instances: []string{"1"}, Identities: []string{"@1 hmr_test.Layout#o0", "@1 hmr_test.Layout#o1", "@9 hmr_test.Layout#o0", "nonsense"}})
+	request := httptest.NewRequest(http.MethodPost, hmr.Prefix+"components", bytes.NewReader(body))
+	request.Header.Set(hmr.TokenHeader, token)
+	response := httptest.NewRecorder()
+	f.handler.ServeHTTP(response, request)
+	var decoded hmr.ComponentsResponse
+	if err := json.Unmarshal(response.Body.Bytes(), &decoded); err != nil || response.Code != http.StatusOK {
+		t.Fatalf("status %d, body %s, %v", response.Code, response.Body.String(), err)
+	}
+	if want := map[string]string{"@1 hmr_test.Layout#o0": f.pkg + ".Badge"}; !reflect.DeepEqual(decoded.Outlets, want) {
+		t.Errorf("Outlets = %v, want %v", decoded.Outlets, want)
+	}
+	if decoded.Components["1"] != f.pkg+".Layout" {
+		t.Errorf("Components = %v", decoded.Components)
+	}
+	if strings.Contains(response.Body.String(), "child") {
+		t.Errorf("the answer carries props: %s", response.Body.String())
+	}
+}

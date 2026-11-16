@@ -113,23 +113,25 @@ func (c *Client) Capture(ctx context.Context) (hmr.CaptureStatus, error) {
 }
 
 // Components names the components of the application's live root
-// instances, for the component picker.
-func (c *Client) Components(ctx context.Context, instances []string) (map[string]string, error) {
-	code, body, err := c.post(ctx, "components", hmr.ComponentsRequest{Instances: instances})
+// instances, by the N of "@N", and of the component values built in Go that
+// those roots rendered at content outlets, by Render Identity, for the
+// component picker.
+func (c *Client) Components(ctx context.Context, instances, outlets []string) (map[string]string, map[string]string, error) {
+	code, body, err := c.post(ctx, "components", hmr.ComponentsRequest{Instances: instances, Identities: outlets})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if code == http.StatusNotFound {
-		return nil, ErrUnavailable
+		return nil, nil, ErrUnavailable
 	}
 	if code != http.StatusOK {
-		return nil, fmt.Errorf("components: status %d: %s", code, bytes.TrimSpace(body))
+		return nil, nil, fmt.Errorf("components: status %d: %s", code, bytes.TrimSpace(body))
 	}
 	var response hmr.ComponentsResponse
 	if err := json.Unmarshal(body, &response); err != nil {
-		return nil, fmt.Errorf("decode components: %w", err)
+		return nil, nil, fmt.Errorf("decode components: %w", err)
 	}
-	return response.Components, nil
+	return response.Components, response.Outlets, nil
 }
 
 func (c *Client) post(ctx context.Context, route string, value any) (int, []byte, error) {

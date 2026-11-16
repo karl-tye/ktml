@@ -21,8 +21,11 @@ type RenderInstance struct {
 	Props       ktml.Component // the generated value itself
 	Generation  uint64         // interpreter program generation at render
 	Depends     []string       // transitive component IDs, sorted
-	RenderedAt  time.Time
-	Size        int // estimated retained bytes
+	// Outlets names the component of each instance the root rendered at a
+	// content outlet, by Render Identity: component values built in Go.
+	Outlets    map[string]string
+	RenderedAt time.Time
+	Size       int // estimated retained bytes
 }
 
 // Identity is the Render Identity of the root instance in the page.

@@ -65,6 +65,7 @@ func (f *fakeExplorer) Describe(id string) (explorer.ComponentInfo, bool) {
 func (f *fakeExplorer) CallTarget(caller, site string) (string, bool) {
 	target, ok := map[string]string{
 		"Dashboard#c0": "Layout", "Dashboard#c1": "BoardView", "BoardView#c0": "JobCard", "JobCard#c0": "Badge", "Layout#c0": "Badge",
+		"Shell#c0": "Frame", "Planner#c0": "Row", "Planner#c1": "Badge", "Row#c0": "Badge",
 	}[strings.TrimPrefix(caller, pkg)+"#"+site]
 	if !ok {
 		return "", false
@@ -86,9 +87,16 @@ func newHandler(t *testing.T) (*Handler, *fakeExplorer, *[]string) {
 	t.Helper()
 	fake := &fakeExplorer{stories: map[string]bool{pkg + "BoardView": true}}
 	var asked []string
-	roots := func(_ context.Context, instances []string) (map[string]string, error) {
+	roots := func(_ context.Context, instances, outlets []string) (map[string]string, map[string]string, error) {
 		asked = append(asked, instances...)
-		return map[string]string{"7": pkg + "Badge"}, nil
+		named := make(map[string]string)
+		for _, outlet := range outlets {
+			// The application recorded a Go-built Planner in Shell's slot.
+			if outlet == "@5 "+pkg+"Shell#c0 "+pkg+"Frame#o0 "+pkg+"Shell#o0" {
+				named[outlet] = pkg + "Planner"
+			}
+		}
+		return map[string]string{"7": pkg + "Badge", "5": pkg + "Shell", "6": pkg + "Shell"}, named, nil
 	}
 	return New(fake, roots, "http://127.0.0.1:7349"), fake, &asked
 }
@@ -347,5 +355,55 @@ func TestEdit_GIVENASelection_WHENEdited_THENOpensTheEditorAtItsLocatedSource(t 
 	}
 	if response := post(handler, Prefix+"edit", `{"component":"`+pkg+`JobCard"}`, map[string]string{"Origin": "https://evil.example"}); response.Code != http.StatusForbidden {
 		t.Errorf("a cross-site edit: %d", response.Code)
+	}
+}
+
+// TestResolve_GIVENAComponentGoPassedIntoASlot_WHENResolved_THENItHasItsOwnLevel
+// gives a component value built in Go and rendered at a layout's content
+// outlet, such as a page passed to a layout, its own place in the chain:
+// its instance's identity ends with the outlet frame, which the program
+// cannot resolve. The application names it, or else the next frame does.
+func TestResolve_GIVENAComponentGoPassedIntoASlot_WHENResolved_THENItHasItsOwnLevel(t *testing.T) {
+	handler, fake, _ := newHandler(t)
+	// Shell (a root rendered by Go) calls Frame at c0; Frame renders its
+	// children, Shell's fill, which renders Shell's outlet o0, where Go
+	// passed a Planner. Planner calls Row at c0, which calls Badge.
+	slot := `@5 ` + pkg + `Shell#c0 ` + pkg + `Frame#o0 ` + pkg + `Shell#o0`
+	badge := slot + ` ` + pkg + `Planner#r0="a" ` + pkg + `Planner#c0 ` + pkg + `Row#c0`
+	// The same shape on a root the application has no record for.
+	inferred := strings.ReplaceAll(badge, "@5 ", "@6 ")
+	request, _ := json.Marshal(resolveRequest{Identities: []string{slot, badge, inferred}})
+	response := post(handler, Prefix+"resolve", string(request), nil)
+	var got resolveResponse
+	if err := json.Unmarshal(response.Body.Bytes(), &got); err != nil || response.Code != http.StatusOK {
+		t.Fatalf("status %d: %s", response.Code, response.Body.String())
+	}
+	names := func(identity string) []string {
+		var names []string
+		for _, entry := range got.Chains[identity] {
+			names = append(names, got.Components[entry.Component].Name)
+		}
+		return names
+	}
+	if got := names(slot); !reflect.DeepEqual(got, []string{"Shell", "Frame", "Planner"}) {
+		t.Errorf("slot chain = %q", got)
+	}
+	for _, identity := range []string{badge, inferred} {
+		if got := names(identity); !reflect.DeepEqual(got, []string{"Shell", "Frame", "Planner", "Row", "Badge"}) {
+			t.Errorf("%s chain = %q", identity, got)
+		}
+	}
+	if entry := got.Chains[badge][2]; entry.Identity != slot {
+		t.Errorf("Planner's level is %q, want the slot's identity", entry.Identity)
+	}
+
+	// Locating inside Row follows Planner's call and stops at Planner, whose
+	// own content comes from Go.
+	located, _ := json.Marshal(locateRequest{Identity: slot + ` ` + pkg + `Planner#r0="a" ` + pkg + `Planner#c0`, Path: []compiler.ElementStep{{Tag: "li"}}})
+	post(handler, Prefix+"locate", string(located), nil)
+	located, _ = json.Marshal(locateRequest{Identity: slot, Path: []compiler.ElementStep{{Tag: "ul"}}})
+	post(handler, Prefix+"locate", string(located), nil)
+	if want := []string{"Row Planner#c0 | li", "Planner | ul"}; !reflect.DeepEqual(fake.located, want) {
+		t.Errorf("located %q, want %q", fake.located, want)
 	}
 }

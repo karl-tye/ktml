@@ -44,8 +44,9 @@ type Explorer interface {
 type Editor func(location explorer.Location) error
 
 // Roots names the components of the application's root instances, by the
-// N of "@N" (control.Client.Components).
-type Roots func(ctx context.Context, instances []string) (map[string]string, error)
+// N of "@N", and of the component values built in Go that they rendered at
+// content outlets, by Render Identity (control.Client.Components).
+type Roots func(ctx context.Context, instances, outlets []string) (roots, atOutlets map[string]string, err error)
 
 // Handler serves the picker's routes.
 type Handler struct {
@@ -221,18 +222,23 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // the identity names. The calls that supplied the instance's content, and
 // outward each caller's, come from the identity's frames.
 func (h *Handler) locate(ctx context.Context, request locateRequest) []explorer.Location {
-	chain := h.resolve(ctx, []string{request.Identity}).Chains[request.Identity]
+	resolved := h.resolveAll(ctx, []string{request.Identity})
+	chain := resolved.response.Chains[request.Identity]
 	_, frames, err := parseIdentity(request.Identity)
 	if len(chain) == 0 || err != nil {
 		return make([]explorer.Location, len(request.Path))
 	}
-	return h.explorer.Locate(chain[len(chain)-1].Component, contentLinks(frames), request.Path)
+	return h.explorer.Locate(chain[len(chain)-1].Component, contentLinks(frames, resolved.outletAt(request.Identity, frames)), request.Path)
 }
+
+// outletInstance reports whether the first n frames of an identity end at
+// an instance rendered at a content outlet: a component value built in Go.
+type outletInstance func(n int) bool
 
 // contentLinks returns the call that rendered the instance with these
 // Render Identity frames, then the call that rendered that caller's
 // instance, and so on outward, while each is a KTML call.
-func contentLinks(frames []frame) []explorer.Link {
+func contentLinks(frames []frame, outlet outletInstance) []explorer.Link {
 	var links []explorer.Link
 	for len(frames) > 0 {
 		last := frames[len(frames)-1]
@@ -240,7 +246,7 @@ func contentLinks(frames []frame) []explorer.Link {
 			break
 		}
 		links = append(links, explorer.Link{Caller: last.component, Site: last.source})
-		owner, ok := ownerFrames(frames[:len(frames)-1])
+		owner, ok := ownerFrames(frames[:len(frames)-1], outlet)
 		if !ok {
 			break
 		}
@@ -250,12 +256,16 @@ func contentLinks(frames []frame) []explorer.Link {
 }
 
 // ownerFrames trims identity frames to those of the instance whose source
-// renders after them: a call frame starts the called instance; a repetition
-// item stays in its component's source; content at an outlet is the source
-// of the call that rendered the outlet's instance. It reports false when that
-// is content built in Go.
-func ownerFrames(frames []frame) ([]frame, bool) {
+// renders after them: a call frame starts the called instance, and so does
+// an outlet frame where a component value built in Go renders; a repetition
+// item stays in its component's source; other content at an outlet is the
+// source of the call that rendered the outlet's instance. It reports false
+// when that is content built in Go.
+func ownerFrames(frames []frame, outlet outletInstance) ([]frame, bool) {
 	for len(frames) > 0 {
+		if outlet != nil && outlet(len(frames)) {
+			return frames, true
+		}
 		last := frames[len(frames)-1]
 		switch last.source[0] {
 		case 'c':
@@ -263,8 +273,8 @@ func ownerFrames(frames []frame) ([]frame, bool) {
 		case 'r':
 			frames = frames[:len(frames)-1]
 		case 'o':
-			instance, ok := ownerFrames(frames[:len(frames)-1])
-			if !ok || len(instance) == 0 {
+			instance, ok := ownerFrames(frames[:len(frames)-1], outlet)
+			if !ok || len(instance) == 0 || !strings.HasPrefix(instance[len(instance)-1].source, "c") {
 				return nil, false
 			}
 			frames = instance[:len(instance)-1]
@@ -366,12 +376,46 @@ func parseIdentity(identity string) (string, []frame, error) {
 	return number, frames, nil
 }
 
-// resolve builds the component chain of every identity. A frame's component
-// is the one rendering, so a root's component is that of its first frame;
-// the application names a root that has none. A call frame's instance is the
-// component the call renders; outlet and repetition frames are not
-// instances.
+// resolved is a resolve response, with the components of the instances at
+// outlets that it found, by Render Identity.
+type resolved struct {
+	response resolveResponse
+	outlets  map[string]string
+}
+
+// outletAt reports which prefixes of an identity's frames end at an
+// instance at an outlet.
+func (r resolved) outletAt(identity string, frames []frame) outletInstance {
+	root, _, _ := strings.Cut(identity, " ")
+	return func(n int) bool {
+		_, ok := r.outlets[prefixIdentity(root, frames[:n])]
+		return ok
+	}
+}
+
+// prefixIdentity is the Render Identity of root followed by frames.
+func prefixIdentity(root string, frames []frame) string {
+	identity := root
+	for _, current := range frames {
+		identity += " " + current.raw
+	}
+	return identity
+}
+
+// resolve builds the component chain of every identity.
 func (h *Handler) resolve(ctx context.Context, identities []string) resolveResponse {
+	return h.resolveAll(ctx, identities).response
+}
+
+// resolveAll builds the component chain of every identity. A frame's
+// component is the one rendering, so a root's component is that of its first
+// frame; the application names a root that has none. A call frame's instance
+// is the component the call renders. An outlet frame is an instance when the
+// content there is a component value built in Go, such as a page passed to a
+// layout: the application names it, or else the next frame does, which names
+// the component whose source renders there when the outlet's own instance
+// was not rendered by a KTML call. Repetition frames are not instances.
+func (h *Handler) resolveAll(ctx context.Context, identities []string) resolved {
 	response := resolveResponse{Chains: make(map[string][]chainEntry), Components: make(map[string]componentInfo)}
 	type parsed struct {
 		root   string
@@ -379,7 +423,7 @@ func (h *Handler) resolve(ctx context.Context, identities []string) resolveRespo
 	}
 	byIdentity := make(map[string]parsed)
 	rootComponent := make(map[string]string)
-	var unnamed []string
+	var unnamed, outletPrefixes []string
 	for _, identity := range identities {
 		root, frames, err := parseIdentity(identity)
 		if err != nil {
@@ -389,15 +433,24 @@ func (h *Handler) resolve(ctx context.Context, identities []string) resolveRespo
 		if len(frames) > 0 {
 			rootComponent[root] = frames[0].component
 		}
+		for index, current := range frames {
+			if strings.HasPrefix(current.source, "o") {
+				prefix := prefixIdentity("@"+root, frames[:index+1])
+				if !slices.Contains(outletPrefixes, prefix) && len(outletPrefixes) < maxIdentities {
+					outletPrefixes = append(outletPrefixes, prefix)
+				}
+			}
+		}
 	}
 	for _, identity := range identities {
 		if entry, ok := byIdentity[identity]; ok && len(entry.frames) == 0 && rootComponent[entry.root] == "" && !slices.Contains(unnamed, entry.root) {
 			unnamed = append(unnamed, entry.root)
 		}
 	}
-	if len(unnamed) > 0 && h.roots != nil {
+	outlets := make(map[string]string)
+	if (len(unnamed) > 0 || len(outletPrefixes) > 0) && h.roots != nil {
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-		named, err := h.roots(ctx, unnamed)
+		named, atOutlets, err := h.roots(ctx, unnamed, outletPrefixes)
 		cancel()
 		if err == nil {
 			for root, component := range named {
@@ -405,6 +458,34 @@ func (h *Handler) resolve(ctx context.Context, identities []string) resolveRespo
 					rootComponent[root] = component
 				}
 			}
+			for prefix, component := range atOutlets {
+				if slices.Contains(outletPrefixes, prefix) {
+					outlets[prefix] = component
+				}
+			}
+		}
+	}
+	// Infer the rest, shorter prefixes first, since an outlet instance's
+	// own outlets hold Go content too.
+	for _, entry := range byIdentity {
+		outlet := func(n int) bool {
+			_, ok := outlets[prefixIdentity("@"+entry.root, entry.frames[:n])]
+			return ok
+		}
+		for index, current := range entry.frames {
+			if !strings.HasPrefix(current.source, "o") || index+1 >= len(entry.frames) {
+				continue
+			}
+			prefix := prefixIdentity("@"+entry.root, entry.frames[:index+1])
+			if _, known := outlets[prefix]; known {
+				continue
+			}
+			owner, ok := ownerFrames(entry.frames[:index], outlet)
+			if !ok || (len(owner) > 0 && !outlet(len(owner))) {
+				// KTML content of a call, or content of unknown origin.
+				continue
+			}
+			outlets[prefix] = entry.frames[index+1].component
 		}
 	}
 	describe := func(component string) {
@@ -430,16 +511,20 @@ func (h *Handler) resolve(ctx context.Context, identities []string) resolveRespo
 		chain := []chainEntry{{Identity: prefix, Component: root}}
 		for _, current := range entry.frames {
 			prefix += " " + current.raw
-			if !strings.HasPrefix(current.source, "c") {
-				continue
-			}
-			if target, ok := h.explorer.CallTarget(current.component, current.source); ok {
-				chain = append(chain, chainEntry{Identity: prefix, Component: target})
+			switch {
+			case strings.HasPrefix(current.source, "c"):
+				if target, ok := h.explorer.CallTarget(current.component, current.source); ok {
+					chain = append(chain, chainEntry{Identity: prefix, Component: target})
+				}
+			case strings.HasPrefix(current.source, "o"):
+				if component, ok := outlets[prefix]; ok {
+					chain = append(chain, chainEntry{Identity: prefix, Component: component})
+				}
 			}
 		}
 		if chain[len(chain)-1].Identity != identity {
-			// The instance itself did not resolve, such as a component
-			// value rendered at an outlet.
+			// The instance itself did not resolve, such as a closure
+			// rendered at an outlet.
 			continue
 		}
 		for _, link := range chain {
@@ -447,5 +532,5 @@ func (h *Handler) resolve(ctx context.Context, identities []string) resolveRespo
 		}
 		response.Chains[identity] = chain
 	}
-	return response
+	return resolved{response: response, outlets: outlets}
 }
