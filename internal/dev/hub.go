@@ -2,6 +2,7 @@ package dev
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -531,12 +532,98 @@ func (h *Hub) backendReady(ctx context.Context) error {
 	return h.lrServer.WaitForTarget(ctx, h.readyTimeout())
 }
 
-// reload prepares one batch from the changed files, any files left over from an
-// earlier unpublished batch, and every transitive dependent of a changed or
-// removed source. Generation, build state, the backend, the browser, and the
-// AST baselines are published for the whole batch or not at all. It reports
+// maxSettleRounds bounds the batches one reload runs while the sources it
+// reads keep changing under it. A source still changing after them stays
+// pending, and the watcher's events for its later changes start new batches.
+const maxSettleRounds = 8
+
+// reload runs batches until the output matches the sources on disk. A batch
+// reads its sources before generation, which can take long enough for them
+// to change again, as when a git stash during a commit's hooks briefly puts
+// older sources back and then restores them. The watcher's events for such
+// a change can be folded into the batch already running, or lost when
+// inotify's queue overflows, so after each batch reload checks every source
+// it read and runs another batch for those that changed since. It reports
 // whether it restarted the backend, successfully or not.
 func (h *Hub) reload(ctx context.Context, files []string) bool {
+	force := h.forceRestart
+	defer func() { h.forceRestart = force }()
+	restarted := false
+	for round := 1; ; round++ {
+		read := make(map[string]sourceStamp)
+		if h.reloadBatch(ctx, files, read) {
+			restarted = true
+			// One restart covers the restart_watch change.
+			h.forceRestart = false
+		}
+		files = changedSources(read)
+		if len(files) == 0 {
+			return restarted
+		}
+		if round >= maxSettleRounds {
+			slog.Warn("Sources keep changing while they are generated; regenerating on their next change", "files", files)
+			for _, file := range files {
+				h.pending[file] = true
+			}
+			return restarted
+		}
+		slog.Info("Sources changed while their batch was generated; regenerating them", "files", files)
+	}
+}
+
+// sourceStamp is what a batch read of one source: whether it existed, and
+// its size, modification time, and content hash.
+type sourceStamp struct {
+	exists  bool
+	size    int64
+	modTime int64
+	hash    [sha256.Size]byte
+}
+
+// readSource reads a batch source and records what was read. The stamp's
+// metadata is taken before the read, so a change during the read shows as
+// a change afterwards.
+func readSource(file string, read map[string]sourceStamp) ([]byte, error) {
+	info, statErr := os.Stat(file)
+	content, err := os.ReadFile(file)
+	switch {
+	case err == nil:
+		stamp := sourceStamp{exists: true, hash: sha256.Sum256(content)}
+		if statErr == nil {
+			stamp.size, stamp.modTime = info.Size(), info.ModTime().UnixNano()
+		}
+		read[file] = stamp
+	case os.IsNotExist(err):
+		read[file] = sourceStamp{}
+	}
+	return content, err
+}
+
+// changedSources returns the sources whose file differs from what a batch
+// read: written, replaced, removed, or created since.
+func changedSources(read map[string]sourceStamp) []string {
+	var changed []string
+	for file, before := range read {
+		now := make(map[string]sourceStamp, 1)
+		if _, err := readSource(file, now); err != nil && !os.IsNotExist(err) {
+			changed = append(changed, file)
+			continue
+		}
+		if now[file] != before {
+			changed = append(changed, file)
+		}
+	}
+	sort.Strings(changed)
+	return changed
+}
+
+// reloadBatch prepares one batch from the changed files, any files left over
+// from an earlier unpublished batch, and every transitive dependent of a
+// changed or removed source, recording each source it reads in read.
+// Generation, build state, the backend, the browser, and the AST baselines
+// are published for the whole batch or not at all. It reports whether it
+// restarted the backend, successfully or not.
+func (h *Hub) reloadBatch(ctx context.Context, files []string, read map[string]sourceStamp) bool {
 	fullReload := false
 	var patchedComponent string
 	var patchedFile string
@@ -570,7 +657,7 @@ func (h *Hub) reload(ctx context.Context, files []string) bool {
 
 	for _, file := range sortedKeys(batchFiles) {
 		slog.Debug("Parsing changed KTML file", "file", file)
-		content, err := os.ReadFile(file)
+		content, err := readSource(file, read)
 		if err != nil {
 			if !os.IsNotExist(err) {
 				slog.Error("Failed to read changed file", "file", file, "error", err)
@@ -619,7 +706,7 @@ func (h *Hub) reload(ctx context.Context, files []string) bool {
 		removed[file] = true
 	}
 	for _, file := range h.dependents(batchFiles, pendingASTs, removed) {
-		content, err := os.ReadFile(file)
+		content, err := readSource(file, read)
 		if err != nil {
 			slog.Error("Failed to read dependent file", "file", file, "error", err)
 			fail()
