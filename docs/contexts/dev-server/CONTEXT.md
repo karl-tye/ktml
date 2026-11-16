@@ -9,7 +9,7 @@ The `ktml dev` command experience. Starts a reverse proxy, a file watcher, and t
 _Avoid_: Dev mode, development server, hot reload server
 
 **File Watcher**:
-A filesystem observer (via `fsnotify`) that recursively monitors the project directory. Categorizes each debounced batch as a reload event (`watch`: `.ktml`, `.ktmlschema`) or a restart event (`restart_watch`: `.go`, `.mod`, `.sum`), and reports `reload_watch` static assets (`.css`, images) apart. A restart batch still generates its KTML sources, before the rebuild. Debounces rapid changes to avoid redundant processing.
+A filesystem observer (via `fsnotify`) that recursively monitors the project directory. Categorizes each debounced batch as a reload event (`watch`: `.ktml`, `.ktmlschema`) or a restart event (`restart_watch`: `.go`, `.mod`, `.sum`), and reports `reload_watch` static assets (`.css`, images) apart. A restart batch still generates its KTML sources, before the rebuild. Debounces rapid changes to avoid redundant processing. It watches every directory except `.git`, starts before the initial generation, and keeps reading file events while a batch waits for the Hub, folding later changes into the waiting batch; if the kernel's event queue overflows anyway, its next batch names every watched file. After each batch the Hub checks every source the batch read (existence, size, modification time, content hash) and generates again those that changed since, so output generated from a source a `git stash` briefly put back is replaced once the stash is restored, even when no later event names it.
 _Avoid_: File observer, change detector
 
 **Watch Pattern**:

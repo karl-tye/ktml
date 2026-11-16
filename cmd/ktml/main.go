@@ -941,6 +941,13 @@ func devCmd() {
 	}()
 	defer proxyServer.Close()
 
+	// The watcher starts before the initial generation reads the sources, so
+	// a change made meanwhile reaches the hub as its first batch.
+	slog.Debug("Starting watcher", "watch", cfg.Dev.Watch, "restartWatch", cfg.Dev.RestartWatch, "reloadWatch", cfg.Dev.ReloadWatch)
+	w := watcher.New(".", cfg.Dev.Watch, cfg.Dev.RestartWatch, 50*time.Millisecond)
+	w.SetAssetWatch(cfg.Dev.ReloadWatch)
+	events := w.Start(ctx)
+
 	slog.Debug("Performing initial generation of all .ktml files")
 	var sources []string
 	if err := generateKTMLFiles(".", func(path string) error {
@@ -1032,11 +1039,6 @@ func devCmd() {
 	if flags.captureDir != "" {
 		go reportCapture(ctx, os.Stderr, controlClient, time.Duration(cfg.Dev.ReadyTimeoutMS)*time.Millisecond)
 	}
-
-	slog.Debug("Starting watcher", "watch", cfg.Dev.Watch, "restartWatch", cfg.Dev.RestartWatch, "reloadWatch", cfg.Dev.ReloadWatch)
-	w := watcher.New(".", cfg.Dev.Watch, cfg.Dev.RestartWatch, 50*time.Millisecond)
-	w.SetAssetWatch(cfg.Dev.ReloadWatch)
-	events := w.Start(ctx)
 
 	slog.Debug("Starting hub listen loop")
 	hub.Listen(ctx, events)
