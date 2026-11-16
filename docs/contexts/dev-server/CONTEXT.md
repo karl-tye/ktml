@@ -109,6 +109,16 @@ it is declared, needs a way from a DOM element back to a `.ktml` element node.
   is skipped; Alpine `x-for` output and HTMX swaps of non-KTML markup are not
   in any Document) have no source. Two identical siblings from different
   branches resolve to the first. Content built in Go has no KTML source.
+- **Component values at outlets.** A component value built in Go and
+  rendered at a content outlet (a page passed into a layout's slot) is marked
+  with the outlet's scope, an identity ending in `<component>#o<n>`, which the
+  program cannot name. The app's dev hook records the component it rendered
+  at each such scope with the root (`hmr.RenderInstance.Outlets`, component
+  IDs only), `POST /__ktml/dev/components` names them, and the picker
+  otherwise takes the next frame's component when the outlet's own instance
+  was not rendered by a KTML call (its content is then Go's). The value is
+  then a level of the chain with its own box, and locating stops at it,
+  since its own outlets hold Go content.
 - **Click.** A plain click opens the innermost component's story, as before,
   whatever level is selected below it; on a component level it opens that
   component. Ctrl+click (Cmd+click) opens the selected level's Element

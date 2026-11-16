@@ -301,6 +301,12 @@ building them:
   state restored when its `x-data` is unchanged, so `init()` runs again;
   `x-cloak` is never re-added. The overlay events are `diagnostic` and
   `clear`.
+- **Component values at outlets** (2026-11-16). A generated component that
+  Go passes as content renders under the outlet's scope, so its instance
+  identity ends with the `o<n>` frame. A root's render records which
+  component it rendered at each such scope (`RenderInstance.Outlets`,
+  component IDs only, no props), for the component picker; rendered bytes are
+  unchanged.
 - **Known limits.** A root rerenders from the props of its original render: a
   page whose HTMX actions replaced one of its own instances (an `outerHTML`
   swap) gets that instance's old markup back on the next page patch. A patch
