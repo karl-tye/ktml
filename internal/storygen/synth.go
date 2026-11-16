@@ -72,6 +72,9 @@ type synthesizer struct {
 	// fixture names the fixture a story uses for a trusted type; nil uses
 	// the placeholders.
 	fixture func(typeName string) string
+	// keys lists, by element type, the key paths of the workspace's
+	// repetitions over collections of that type; nil until first used.
+	keys map[string][][]string
 }
 
 // position is a state input the component selects Render Clauses on: each
@@ -349,6 +352,9 @@ func (s *synthesizer) value(typ compiler.Type, name, key string, optional bool, 
 		for item := range count {
 			element, _ := s.value(*typ.Element, name, key+"[]", false, item, m, depth+1, fields, story)
 			value.Items = append(value.Items, element)
+		}
+		for _, path := range s.keyPaths(*typ.Element) {
+			uniqueKeys(value.Items, path, name)
 		}
 		return value, true
 	case compiler.StateTypeKind:

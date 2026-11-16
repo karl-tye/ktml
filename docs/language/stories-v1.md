@@ -225,7 +225,10 @@ Two tools write stories; both keep every story a person writes or edits.
   collection's nth item; the Explorer reserves `/_story/` and answers it
   with 204, so a placeholder never loads a page into a preview (route
   mocks remain a later release). A populated collection varies every scalar by
-  item, so Keyed Repetition keys are unique, and cycles through the Variants
+  item, and the value at every path a Keyed Repetition keys that
+  collection's element type by, in any component (`key fact.term`,
+  `key row.meta.id`, `key tag`), is made unique in every story, even where
+  `LongText` gives free text one value or a class stays empty; it cycles through the Variants
   of states its items hold; nested collections hold one item. Trusted values
   use placeholder fixtures (`placeholderURL: TrustedURL = "/_story/trusted-url"`,
   `` placeholderJSON: JSONValue = `{}` ``, `placeholderScript`, `placeholderCSS`)

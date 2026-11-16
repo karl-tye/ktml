@@ -275,3 +275,112 @@ func TestPlan_GIVENAccumulate_WHENOneComponentIsPlanned_THENOtherGeneratedStorie
 		t.Errorf("stories were written for a component that was not planned:\n%s", got)
 	}
 }
+
+// TestGenerate_GIVENCollectionsKeyedByAnyPath_WHENGenerated_THENKeysAreUniqueInEveryStory
+// keys collections by a string field not named key, a nested field, an
+// integer, the item itself, and a markup-shaped field whose synthesized
+// value is empty; and passes a keyed collection to a child component. Plan
+// renders every generated story, so a duplicate key in any of them, such
+// as LongText filling every term with the same text, fails it.
+func TestGenerate_GIVENCollectionsKeyedByAnyPath_WHENGenerated_THENKeysAreUniqueInEveryStory(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "go.mod"), "module example.com/app\n\ngo 1.26\n")
+	writeFile(t, filepath.Join(root, "web", "model.ktmlschema"), `record Fact [
+	term: string,
+	definition: string,
+]
+
+record Meta [
+	code: string,
+]
+
+record Row [
+	meta: Meta,
+	label: string,
+]
+
+record Score [
+	points: integer,
+	player: string,
+]
+
+record Swatch [
+	colour: string,
+	label: string,
+]
+
+record GlossaryView [
+	heading: string,
+	facts: [Fact],
+]
+`)
+	writeFile(t, filepath.Join(root, "web", "lists.ktml"), `import { Fact, Row, Score, Swatch, GlossaryView } from "./model.ktmlschema"
+
+FactList [facts: [Fact]] {
+	dl {
+		for fact in facts key fact.term {
+			dt "{fact.term}"
+			dd "{fact.definition}"
+		}
+	}
+}
+
+RowTable [rows: [Row]] {
+	ul {
+		for row in rows key row.meta.code {
+			li "{row.label}"
+		}
+	}
+}
+
+ScoreBoard [scores: [Score]] {
+	ol {
+		for score in scores key score.points {
+			li "{score.player}"
+		}
+	}
+}
+
+TagList [tags: [string]] {
+	ul {
+		for tag in tags key tag {
+			li "{tag}"
+		}
+	}
+}
+
+SwatchList [swatches: [Swatch]] {
+	ul {
+		for swatch in swatches key swatch.colour {
+			li "{swatch.label}"
+		}
+	}
+}
+
+GlossaryPage [view: GlossaryView] {
+	h1 "{view.heading}"
+	FactList facts="{view.facts}"
+}
+`)
+	generate(t, root, nil)
+	got := readFile(t, filepath.Join(root, "web", "lists.story.ktml"))
+	t.Logf("generated:\n%s", got)
+	for _, want := range []string{
+		"story FactList.LongText",
+		"story TagList.LongText",
+		"story RowTable.Default",
+		"story ScoreBoard.Default",
+		"story SwatchList.Default",
+		"story GlossaryPage.LongText",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("generated Document lacks %q:\n%s", want, got)
+		}
+	}
+	// A second run is stable.
+	for _, file := range generate(t, root, nil).Files {
+		if file.Changed {
+			t.Errorf("%s changed on a second run", file.Path)
+		}
+	}
+}
