@@ -61,8 +61,70 @@ A named variant of the `dev` section (`dev.profiles.<name>`, run with `ktml dev 
 _Avoid_: Environment, mode
 
 **Component Picker**:
-The dev-only part of the injected client (only with `dev.explorer`): a hotkey toggles pick mode, the hovered component instance and its chain are highlighted and labelled, Shift+wheel walks the chain, and a click opens the component's story in the Explorer, creating a type-derived one when it has none. It sends Render Identities and component names, never props.
+The dev-only part of the injected client (only with `dev.explorer`): a hotkey toggles pick mode, the hovered element is highlighted and labelled with its component chain and its Element Path, Shift+wheel walks out element by element and then component by component, and a click opens the innermost component's story in the Explorer, creating a type-derived one when it has none. Ctrl+click (Cmd+click) opens the selection's Element Source in `dev.picker.editor`, or copies it. It sends Render Identities, component names, and element tags, ids, and classes, never props or text.
 _Avoid_: Inspector, element picker
+
+**Element Path**:
+The elements from the top of the innermost component instance (its `data-ktml-i` element, a top-level element of its `ktml:c` range, or `html` for a document component) down to the hovered element, each as its tag, id, and classes, such as `div.timeline-row › span.badge`.
+_Avoid_: Selector, DOM path
+
+**Element Source**:
+The `.ktml` declaration (`file:line:column`) of a picked element, found by Element Location.
+_Avoid_: Source map
+
+**Element Location**:
+How ktml dev finds an Element Source without adding anything to rendered output (see the design note below).
+_Avoid_: Source mapping
+
+## Design note: element picking (2026-11-16)
+
+The picker highlighted only component instances, because only instances carry
+markers (ADR-0004). Picking an element inside a component, and knowing where
+it is declared, needs a way from a DOM element back to a `.ktml` element node.
+
+- **What the dev build knows.** The page carries Render Identities on
+  instances only. ktml dev holds the Explorer's interpreter program, whose
+  snapshot has every Document's AST with byte positions, the `c<n>` site of
+  every call node, and the `o<n>` site of every outlet. Render Identities name,
+  frame by frame, which component's source was rendering, so the chain of
+  calls that supplied each outlet's content can be recovered from the
+  identity alone.
+- **Decision: structural matching in ktml dev, no new markers.** The client
+  sends `POST /__ktml/picker/locate` with the innermost instance's identity
+  and the Element Path. ktml dev matches the path against that component's
+  bodies: markup elements by tag, with each static `id` and every static
+  class token required on the page element (dynamic values match anything);
+  `if`/`else` branches and `for` bodies are transparent; calls are opaque,
+  since their output is a nested instance; an outlet continues the match in
+  the content its caller supplied (the call's children or slot body), found
+  by the instance identity's call frame, and so on outward. The highest
+  scoring match wins (an id match counts most, then each class), and the
+  first in source order breaks a tie. Every element of the path gets the
+  source of its match, or none.
+- **Rejected: a dev-only source attribute on every element.** It would change
+  the `ktmldev` bytes of every element, the parity harness, morphing, and the
+  HTMX fragments, for a feature only the picker uses. Production bytes are
+  unchanged either way; the chosen approach changes no rendered bytes at all.
+- **Limits.** Elements that browsers or scripts create (an implicit `tbody`
+  is skipped; Alpine `x-for` output and HTMX swaps of non-KTML markup are not
+  in any Document) have no source. Two identical siblings from different
+  branches resolve to the first. Content built in Go has no KTML source.
+- **Click.** A plain click opens the innermost component's story, as before,
+  whatever level is selected below it; on a component level it opens that
+  component. Ctrl+click (Cmd+click) opens the selected level's Element
+  Source (a component's declaration for a component level) in
+  `dev.picker.editor`, an argument list with `{file}`, `{line}`, and
+  `{column}`, such as `["code", "-g", "{file}:{line}:{column}"]`; without an
+  editor it copies `file:line:column`, as `C` does in pick mode. `$EDITOR`
+  is not used: it is usually a terminal editor, which ktml dev has no
+  terminal to give.
+- **Editor safety.** `POST /__ktml/picker/edit` takes the same identity and
+  Element Path (or a component), never a file name: ktml dev locates the
+  source again from its own program, checks that the file is a `.ktml`
+  Document inside the project, and runs the configured command directly
+  (no shell). The route is behind the picker's same-origin, loopback-Host,
+  `application/json` POST check, and the page cannot choose the command or
+  the file.
 
 **Component Patching**:
 The server-side half of Hot Component Reload. On a compatible change the Dev Server sends the validated sources to the app's token-guarded `/__ktml/dev/swap`; the app swaps its interpreter program and returns the rerendered HTML of every affected root. The Dev Server sends each as an SSE `patch` event to that root's page session. Any failed or ambiguous patch rebuilds and reloads.
