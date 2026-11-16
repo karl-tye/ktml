@@ -26,11 +26,16 @@ type devPlan struct {
 	envFileMissing bool
 }
 
-// planDev applies the --profile, reads its env file, and checks a capture
+// planDev applies the --profile and the --port, --proxy-target, and
+// --explorer-addr overrides, reads its env file, and checks a capture
 // request. lookup expands env file references to variables the file does
 // not set.
 func planDev(cfg *config.Config, root string, flags devFlags, lookup func(string) (string, bool)) (devPlan, error) {
 	dev, err := cfg.DevProfile(flags.profile)
+	if err != nil {
+		return devPlan{}, err
+	}
+	dev, err = dev.WithOverrides(flags.overrides)
 	if err != nil {
 		return devPlan{}, err
 	}

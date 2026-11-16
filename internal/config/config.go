@@ -582,6 +582,9 @@ func validateDev(dev *Dev) error {
 	if dev.Port == 0 {
 		dev.Port = 7331
 	}
+	if dev.Port < 0 || dev.Port > 65535 {
+		return &configdiag.PathError{Path: []string{"dev", "port"}, Message: fmt.Sprintf("dev port %d must be between 1 and 65535", dev.Port)}
+	}
 	if dev.ProxyTarget == "" {
 		return &configdiag.PathError{Path: []string{"dev"}, Message: "proxy target is required"}
 	}

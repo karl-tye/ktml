@@ -53,7 +53,7 @@ A development UI over the project's `.story.ktml` stories, served by `ktml explo
 _Avoid_: Component browser, element inspector, storybook
 
 **Dev Profile**:
-A named variant of the `dev` section (`dev.profiles.<name>`, run with `ktml dev --profile <name>`) that overrides its command, build, env file and env, ports, proxy target, Explorer address, and ready timeout. `--dry-run` prints the resolved run, with variable names but never values. A profile with an `env_file` may point the app at production services.
+A named variant of the `dev` section (`dev.profiles.<name>`, run with `ktml dev --profile <name>`) that overrides its command, build, env file and env, ports, proxy target, Explorer address, and ready timeout. `--port`, `--proxy-target`, and `--explorer-addr` override those keys again over the profile, with the same validation, and `{target_port}` in the command, build, or env values follows the resolved proxy target's port. `--dry-run` prints the resolved run, with variable names but never values. A profile with an `env_file` may point the app at production services.
 _Avoid_: Environment, mode
 
 **Component Picker**:

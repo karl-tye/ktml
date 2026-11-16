@@ -198,7 +198,9 @@ preview's overlay.
 `127.0.0.1:7332`, port 0 picks a free port, and only a loopback host
 (`127.0.0.1`, `::1`, or `localhost`) is accepted; any other address is a
 configuration error at `dev.explorer.addr`, which `ktml dev` refuses and the
-LSP shows on the value. The Explorer runs in-process over the project root
+LSP shows on the value. `ktml dev --explorer-addr host:port` overrides it
+with the same rules, and serves the Explorer even without `dev.explorer`.
+The Explorer runs in-process over the project root
 with its own loopback server, livereload hub, and watcher (the same
 `explorer.Server` that `ktml explore` runs), reads the top-level `explorer`
 section above, logs `KTML Explorer on http://…/`, and stops with `ktml dev`.

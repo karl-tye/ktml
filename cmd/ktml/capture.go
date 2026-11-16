@@ -20,6 +20,9 @@ type devFlags struct {
 	captureRaw bool
 	profile    string
 	dryRun     bool
+	// overrides replace dev keys over the profile (--port, --proxy-target,
+	// --explorer-addr).
+	overrides config.DevOverrides
 }
 
 func parseDevFlags(args []string, stderr io.Writer) (devFlags, error) {
@@ -30,8 +33,18 @@ func parseDevFlags(args []string, stderr io.Writer) (devFlags, error) {
 	set.BoolVar(&flags.captureRaw, "capture-raw", false, "keep raw values in captured stories instead of redacting them; for local use only")
 	set.StringVar(&flags.profile, "profile", "", "apply dev.profiles.`name` from ktml.config.json")
 	set.BoolVar(&flags.dryRun, "dry-run", false, "print the resolved command, ports, and env file (variable names only) and exit without starting anything")
+	set.IntVar(&flags.overrides.Port, "port", 0, "serve the dev proxy on 127.0.0.1:`port`, over dev.port")
+	set.StringVar(&flags.overrides.ProxyTarget, "proxy-target", "", "proxy to the app at `url`, over dev.proxy_target (loopback unless dev.allow_remote_proxy_target)")
+	set.StringVar(&flags.overrides.ExplorerAddr, "explorer-addr", "", "serve the Component Explorer on loopback `host:port`, over dev.explorer.addr")
 	if err := set.Parse(args); err != nil {
 		return flags, err
+	}
+	portSet := false
+	set.Visit(func(f *flag.Flag) { portSet = portSet || f.Name == "port" })
+	if portSet && flags.overrides.Port == 0 {
+		// 0 would leave dev.port in place rather than pick a port.
+		fmt.Fprintln(stderr, "--port must be between 1 and 65535")
+		return flags, errors.New("--port 0")
 	}
 	if set.NArg() > 0 {
 		fmt.Fprintf(stderr, "ktml dev takes no arguments, got %q\n", set.Args())
