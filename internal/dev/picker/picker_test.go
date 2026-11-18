@@ -353,6 +353,13 @@ func TestEdit_GIVENASelection_WHENEdited_THENOpensTheEditorAtItsLocatedSource(t 
 	if response := post(handler, Prefix+"edit", `{"component":"`+pkg+`JobCard"}`, nil); response.Code != http.StatusBadGateway || !strings.Contains(response.Body.String(), "no such editor") {
 		t.Errorf("a failing editor: %d %s", response.Code, response.Body.String())
 	}
+	// An editor with no way to open the source asks the page to copy it.
+	handler.SetEditor(func(explorer.Location) error { return &CopyFallback{Reason: "vim needs a terminal"} })
+	response = post(handler, Prefix+"edit", `{"component":"`+pkg+`JobCard"}`, nil)
+	got = editResponse{}
+	if response.Code != http.StatusOK || json.Unmarshal(response.Body.Bytes(), &got) != nil || got.Fallback != "vim needs a terminal" || got.Location.File != "web/JobCard.ktml" {
+		t.Errorf("a copy fallback: %d %s", response.Code, response.Body.String())
+	}
 	if response := post(handler, Prefix+"edit", `{"component":"`+pkg+`JobCard"}`, map[string]string{"Origin": "https://evil.example"}); response.Code != http.StatusForbidden {
 		t.Errorf("a cross-site edit: %d", response.Code)
 	}

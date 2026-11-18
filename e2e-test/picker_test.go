@@ -443,3 +443,71 @@ func TestPicker_GIVENAPageGoPassedIntoALayoutSlot_WHENElementsArePicked_THENShow
 		time.Sleep(50 * time.Millisecond)
 	}
 }
+
+// TestPicker_GIVENEDITORAndNoConfiguredEditor_WHENCtrlClicked_THENOpensTheSourceInTheEDITOR
+// resolves Ctrl+click's editor from ktml dev's own $EDITOR when
+// dev.picker.editor is unset: the hint names it, Ctrl+click runs it with its
+// goto syntax and without its blocking flag. The editor is a fake on PATH.
+func TestPicker_GIVENEDITORAndNoConfiguredEditor_WHENCtrlClicked_THENOpensTheSourceInTheEDITOR(t *testing.T) {
+	prepareBinaries(t)
+	bin := t.TempDir()
+	record := filepath.Join(t.TempDir(), "args")
+	writeFile(t, filepath.Join(bin, "code"), "#!/bin/sh\nprintf '%s\\n' \"$@\" > '"+record+".tmp' && mv '"+record+".tmp' '"+record+"'\n")
+	if err := os.Chmod(filepath.Join(bin, "code"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	explorerPort := freePort(t)
+	app, output := newHMRAppEnv(t, []string{"EDITOR=code --wait", "PATH=" + bin + string(os.PathListSeparator) + os.Getenv("PATH")}, func(dir string, devCfg map[string]any) {
+		devCfg["explorer"] = map[string]any{"addr": fmt.Sprintf("127.0.0.1:%d", explorerPort)}
+	})
+	if !strings.Contains(output.String(), "Ctrl+click it to open its source in code ($EDITOR)") {
+		t.Errorf("ktml dev did not name the editor:\n%s", output.String())
+	}
+	browser := rod.New().ControlURL(launcher.New().Headless(true).Set("headless", "new").MustLaunch()).MustConnect()
+	t.Cleanup(browser.MustClose)
+	const timeout = 15 * time.Second
+	page := browser.MustPage(app.url + "/planner")
+	waitLoad(t, page, timeout)
+	page.MustSetViewport(1200, 800, 1, false)
+	_ = proto.BrowserGrantPermissions{Origin: app.url, Permissions: []proto.BrowserPermissionType{proto.BrowserPermissionTypeClipboardReadWrite, proto.BrowserPermissionTypeClipboardSanitizedWrite}}.Call(browser)
+	const status = `#planner .planner-row[data-id="j1"] span.status`
+	until(t, page, "the picker", `() => window.__ktmlPickerLoaded === true && !!document.querySelector('`+status+`')`, timeout)
+	shadow := func(part string) string {
+		return `() => { const host = document.querySelector("[data-ktml-picker]"); const node = host && host.shadowRoot.querySelector("` + part + `"); return node ? node.textContent : ""; }`
+	}
+	if err := page.KeyActions().Press(input.AltLeft, input.ShiftLeft).Type(input.KeyK).Do(); err != nil {
+		t.Fatal(err)
+	}
+	until(t, page, "pick mode", `() => !!document.querySelector("[data-ktml-picker]")`, timeout)
+	if hint := evalString(t, page, shadow("[data-hint]")); !strings.Contains(hint, "Ctrl+click to open the source in code") {
+		t.Errorf("hint = %q", hint)
+	}
+	box := page.MustEval(`(selector) => { const r = document.querySelector(selector).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }`, status).Arr()
+	x, y := box[0].Num(), box[1].Num()
+	page.Mouse.MustMoveTo(x-1, y)
+	page.Mouse.MustMoveTo(x, y)
+	until(t, page, "the badge's source", `() => (`+shadow("[data-source]")+`)().startsWith("web/planner.ktml:10:5")`, timeout)
+	if err := page.Keyboard.Press(input.ControlLeft); err != nil {
+		t.Fatal(err)
+	}
+	page.Mouse.MustClick(proto.InputMouseButtonLeft)
+	if err := page.Keyboard.Release(input.ControlLeft); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"-g", filepath.Join(app.dir, "web", "planner.ktml") + ":10:5"}
+	deadline := time.Now().Add(timeout)
+	for {
+		if content, err := os.ReadFile(record); err == nil {
+			got := strings.Split(strings.TrimSpace(string(content)), "\n")
+			if len(got) != 2 || got[0] != want[0] || !strings.HasSuffix(got[1], string(filepath.Separator)+filepath.Join("web", "planner.ktml")+":10:5") {
+				t.Errorf("code ran with %q, want %q", got, want)
+			}
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("code never ran; label %q", evalString(t, page, shadow("[data-path]")))
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	until(t, page, "the opened label", `() => (`+shadow("[data-path]")+`)().includes("opened web/planner.ktml:10:5 in code")`, timeout)
+}

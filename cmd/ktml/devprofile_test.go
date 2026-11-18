@@ -97,6 +97,45 @@ func TestDevDryRun_GIVENTheLiveProfile_WHENPrinted_THENShowsTheResolvedRunWithou
 	}
 }
 
+// TestDevDryRun_GIVENEditorSettings_WHENPrinted_THENNamesCtrlClicksEditorAndWhereItCameFrom
+// prints the picker's opener: dev.picker.editor, else ktml dev's own
+// $VISUAL, then $EDITOR, or none, and an editor variable that needs a
+// shell as an error.
+func TestDevDryRun_GIVENEditorSettings_WHENPrinted_THENNamesCtrlClicksEditorAndWhereItCameFrom(t *testing.T) {
+	plain, err := config.Parse([]byte(`{"dev": {"proxy_target": "http://localhost:8080", "command": ["app"], "explorer": {"addr": "127.0.0.1:7400"}}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	configured, err := config.Parse([]byte(`{"dev": {"proxy_target": "http://localhost:8080", "command": ["app"], "explorer": {"addr": "127.0.0.1:7400"}, "picker": {"editor": ["zed", "{file}:{line}:{column}"]}}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		cfg  *config.Config
+		env  map[string]string
+		want string
+	}{
+		{plain, nil, "editor:        none, Ctrl+click copies file:line:column (set dev.picker.editor, $VISUAL, or $EDITOR)"},
+		{plain, map[string]string{"EDITOR": "nvim"}, "editor:        nvim (from $EDITOR): the running Neovim whose working directory holds the file"},
+		{plain, map[string]string{"VISUAL": "code --wait", "EDITOR": "nvim"}, "editor:        code (from $VISUAL): runs code -g FILE:LINE:COLUMN"},
+		{plain, map[string]string{"EDITOR": `vim "oops`}, "editor:        none, Ctrl+click copies file:line:column: $EDITOR"},
+		{configured, map[string]string{"EDITOR": "nvim"}, "editor:        zed {file}:{line}:{column} (dev.picker.editor)"},
+	} {
+		plan, err := planDev(test.cfg, t.TempDir(), devFlags{dryRun: true}, func(name string) (string, bool) {
+			value, ok := test.env[name]
+			return value, ok
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var out bytes.Buffer
+		writeDevPlan(&out, plan)
+		if !strings.Contains(out.String(), test.want) {
+			t.Errorf("%v: dry run does not show %q:\n%s", test.env, test.want, out.String())
+		}
+	}
+}
+
 // TestDevPlan_GIVENTheLiveProfileAndCapture_WHENPlanned_THENCaptureIsRefusedWithoutConsent
 // keeps story capture off a profile whose project has not allowed it.
 func TestDevPlan_GIVENTheLiveProfileAndCapture_WHENPlanned_THENCaptureIsRefusedWithoutConsent(t *testing.T) {

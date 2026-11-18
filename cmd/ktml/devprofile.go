@@ -11,6 +11,7 @@ import (
 
 	"github.com/karl-tye/ktml/dev/hmr"
 	"github.com/karl-tye/ktml/internal/config"
+	"github.com/karl-tye/ktml/internal/dev/picker"
 )
 
 // devPlan is a resolved ktml dev run: the profile's dev configuration, the
@@ -24,6 +25,21 @@ type devPlan struct {
 	capture []string
 	// envFileMissing marks a dry run whose env file does not exist.
 	envFileMissing bool
+	// lookup reads ktml dev's own environment.
+	lookup func(string) (string, bool)
+}
+
+// pickerOpener resolves how Ctrl+click in the picker opens a source:
+// dev.picker.editor, else ktml dev's own $VISUAL, then $EDITOR. It is nil
+// when there is none, and Ctrl+click copies file:line:column.
+func (p devPlan) pickerOpener() (*picker.Opener, error) {
+	return picker.ResolveOpener(p.dev.PickerEditor(), func(name string) string {
+		if p.lookup == nil {
+			return ""
+		}
+		value, _ := p.lookup(name)
+		return value
+	})
 }
 
 // planDev applies the --profile and the --port, --proxy-target, and
@@ -57,7 +73,7 @@ func planDev(cfg *config.Config, root string, flags devFlags, lookup func(string
 	if err != nil {
 		return devPlan{}, err
 	}
-	return devPlan{profile: flags.profile, root: root, cfg: &resolved, dev: dev, env: env, capture: capture, envFileMissing: missing}, nil
+	return devPlan{profile: flags.profile, root: root, cfg: &resolved, dev: dev, env: env, capture: capture, envFileMissing: missing, lookup: lookup}, nil
 }
 
 // processEnv is the application's environment over ktml dev's own: the env
@@ -98,8 +114,13 @@ func writeDevPlan(w io.Writer, p devPlan) {
 	}
 	if dev.PickerEnabled() {
 		fmt.Fprintf(w, "  picker:        %s\n", dev.PickerHotkey())
-		if editor := dev.PickerEditor(); editor != nil {
-			fmt.Fprintf(w, "  editor:        %s\n", strings.Join(editor, " "))
+		switch opener, err := p.pickerOpener(); {
+		case err != nil:
+			fmt.Fprintf(w, "  editor:        none, Ctrl+click copies file:line:column: %v\n", err)
+		case opener == nil:
+			fmt.Fprintln(w, "  editor:        none, Ctrl+click copies file:line:column (set dev.picker.editor, $VISUAL, or $EDITOR)")
+		default:
+			fmt.Fprintf(w, "  editor:        %s\n", opener.Describe())
 		}
 	} else {
 		fmt.Fprintln(w, "  picker:        off")

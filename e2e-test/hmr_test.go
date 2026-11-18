@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -69,6 +70,22 @@ func newHMRApp(t *testing.T) *hmrApp {
 // setup may change first, and returns ktml dev's output as it accumulates.
 func newHMRAppWith(t *testing.T, setup func(dir string, devCfg map[string]any), args ...string) (*hmrApp, *lockedBuffer) {
 	t.Helper()
+	return newHMRAppEnv(t, nil, setup, args...)
+}
+
+// devEnv is ktml dev's environment: this process's, without the editor
+// variables that the picker's Ctrl+click would use, and then env.
+func devEnv(env []string) []string {
+	base := slices.DeleteFunc(os.Environ(), func(variable string) bool {
+		name, _, _ := strings.Cut(variable, "=")
+		return name == "EDITOR" || name == "VISUAL" || name == "NVIM" || name == "TERMINAL"
+	})
+	return append(base, env...)
+}
+
+// newHMRAppEnv is newHMRAppWith with ktml dev's environment set by devEnv.
+func newHMRAppEnv(t *testing.T, env []string, setup func(dir string, devCfg map[string]any), args ...string) (*hmrApp, *lockedBuffer) {
+	t.Helper()
 	ktml, err := filepath.Abs("ktml")
 	if err != nil {
 		t.Fatal(err)
@@ -95,6 +112,7 @@ func newHMRAppWith(t *testing.T, setup func(dir string, devCfg map[string]any), 
 	output := &lockedBuffer{}
 	command := exec.Command(ktml, append([]string{"dev"}, args...)...)
 	command.Dir = dir
+	command.Env = devEnv(env)
 	command.Stdout = io.MultiWriter(os.Stdout, output)
 	command.Stderr = io.MultiWriter(os.Stderr, output)
 	if err := command.Start(); err != nil {

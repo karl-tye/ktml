@@ -9,9 +9,10 @@ type Picker struct {
 	Hotkey string `json:"hotkey"`
 	// Explorer is the Component Explorer's base URL.
 	Explorer string `json:"explorer"`
-	// Editor reports that dev.picker.editor is set, so Ctrl+click opens a
-	// picked element's source rather than copying its location.
-	Editor bool `json:"editor,omitempty"`
+	// Editor names the editor that Ctrl+click opens a picked element's
+	// source in (dev.picker.editor, $VISUAL, or $EDITOR), such as "nvim";
+	// without one, Ctrl+click copies its location.
+	Editor string `json:"editor,omitempty"`
 }
 
 // SetPicker adds the component picker to the client of every page proxied
@@ -47,9 +48,11 @@ func pickerTag(picker *Picker) string {
 //   - a click opens the innermost component's story (or the selected
 //     component's, on a component level) in one reused Explorer tab, after
 //     ktml dev creates a type-derived story if it has none; Ctrl+click
-//     (Cmd+click) opens the selected level's source in dev.picker.editor,
-//     or copies file:line:column without one, as C does. Clicks, and the
-//     pointer events around them, never reach the page.
+//     (Cmd+click) opens the selected level's source in the editor ktml dev
+//     resolved (dev.picker.editor, $VISUAL, or $EDITOR), or copies
+//     file:line:column without one, or when the editor cannot open it (a
+//     terminal editor with no terminal), as C does, saying why. Clicks, and
+//     the pointer events around them, never reach the page.
 //
 // The page's identities and Element Paths (tags, ids, and classes) go to
 // ktml dev's /__ktml/picker/ routes, which name their components and
@@ -210,7 +213,7 @@ const pickerScript = `<script data-ktml-client>
 		label = root.querySelector("[data-path]");
 		source = root.querySelector("[data-source]");
 		hint = root.querySelector("[data-hint]");
-		hint.textContent = "Click to open the component in the Explorer · " + (options.editor ? "Ctrl+click to open the source in your editor" : "Ctrl+click") +
+		hint.textContent = "Click to open the component in the Explorer · " + (options.editor ? "Ctrl+click to open the source in " + options.editor : "Ctrl+click") +
 			" or C to copy file:line · Shift+scroll or Alt+Shift+↑↓ to walk up and down · Esc to exit";
 		label.textContent = "KTML picker: point at an element";
 		document.documentElement.appendChild(host);
@@ -390,15 +393,16 @@ const pickerScript = `<script data-ktml-client>
 		});
 	};
 
-	// copy puts the selection's file:line:column on the clipboard.
-	const copy = () => {
+	// copy puts the selection's file:line:column on the clipboard; why, when
+	// the editor could not open it.
+	const copy = (why) => {
 		const location = target && sourceOf(target);
 		if (!location) {
 			flash(location === undefined ? "KTML picker: still locating the source…" : "KTML picker: no KTML source for this element");
 			return;
 		}
 		const text = sourceText(location);
-		const done = () => flash("KTML picker: copied " + text);
+		const done = () => flash("KTML picker: copied " + text + (why ? " (" + why + ")" : ""));
 		if (navigator.clipboard && navigator.clipboard.writeText) {
 			navigator.clipboard.writeText(text).then(done, () => flash("KTML picker: " + text + " (the clipboard is unavailable)"));
 		} else {
@@ -418,7 +422,8 @@ const pickerScript = `<script data-ktml-client>
 			? { identity: target.entry.identity, path: elements.slice(0, target.index + 1).map(stepOf) }
 			: { component: target.entry.component };
 		post("edit", body).then((answer) => {
-			flash("KTML picker: opened " + sourceText(answer.location));
+			if (answer.fallback) copy(answer.fallback);
+			else flash("KTML picker: opened " + sourceText(answer.location) + " in " + options.editor);
 		}).catch((error) => {
 			console.error("[KTML] The picker could not open the source", error);
 			flash("KTML picker: " + error.message);
@@ -489,7 +494,7 @@ const pickerScript = `<script data-ktml-client>
 			step(event.key === "ArrowUp" ? -1 : 1);
 		} else if ((event.key === "c" || event.key === "C") && !event.ctrlKey && !event.altKey && !event.metaKey) {
 			swallow(event);
-			copy();
+			copy("");
 		}
 	}, true);
 	window.addEventListener("pointermove", (event) => {

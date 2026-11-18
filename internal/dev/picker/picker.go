@@ -116,9 +116,11 @@ type editRequest struct {
 	Component string `json:"component,omitempty"`
 }
 
-// editResponse is the source the editor opened.
+// editResponse is the source the editor opened, or, with Fallback, the
+// source that the picker copies instead and why.
 type editResponse struct {
 	Location explorer.Location `json:"location"`
+	Fallback string            `json:"fallback,omitempty"`
 }
 
 // openRequest is the body of POST /__ktml/picker/open.
@@ -195,7 +197,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if h.editor == nil {
-			http.Error(w, "no editor is configured: set dev.picker.editor", http.StatusNotImplemented)
+			http.Error(w, "no editor is configured: set dev.picker.editor or $EDITOR", http.StatusNotImplemented)
 			return
 		}
 		var location explorer.Location
@@ -211,6 +213,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err := h.editor(location); err != nil {
+			var fallback *CopyFallback
+			if errors.As(err, &fallback) {
+				writeJSON(w, editResponse{Location: location, Fallback: fallback.Reason})
+				return
+			}
 			http.Error(w, err.Error(), http.StatusBadGateway)
 			return
 		}

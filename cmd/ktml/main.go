@@ -1002,13 +1002,21 @@ func devCmd() {
 	}
 	if cfg.Dev.PickerEnabled() && explorerRun != nil {
 		handler := picker.New(explorerRun.server, controlClient.Components, explorerRun.url)
-		editor := cfg.Dev.PickerEditor()
-		if editor != nil {
-			handler.SetEditor(picker.CommandEditor(workspaceRoot, editor))
+		ctrlClick := "copy its source location"
+		opener, err := plan.pickerOpener()
+		if err != nil {
+			slog.Warn("The picker cannot use the editor variable", "error", err)
+			fmt.Fprintf(os.Stderr, "WARNING: %v; Ctrl+click in the picker copies file:line:column\n", err)
+		}
+		editorName := ""
+		if opener != nil {
+			handler.SetEditor(opener.Editor(workspaceRoot))
+			editorName = opener.Name
+			ctrlClick = "open its source in " + opener.Name + " (" + opener.Source + ")"
 		}
 		pickerHandler.Store(handler)
-		lrServer.SetPicker(livereload.Picker{Hotkey: cfg.Dev.PickerHotkey(), Explorer: explorerRun.url, Editor: editor != nil})
-		fmt.Fprintf(os.Stdout, "KTML component picker: press %s on a page to pick an element and open its component in the Explorer, or Ctrl+click it to open its source\n", cfg.Dev.PickerHotkey())
+		lrServer.SetPicker(livereload.Picker{Hotkey: cfg.Dev.PickerHotkey(), Explorer: explorerRun.url, Editor: editorName})
+		fmt.Fprintf(os.Stdout, "KTML component picker: press %s on a page to pick an element and open its component in the Explorer, or Ctrl+click it to %s\n", cfg.Dev.PickerHotkey(), ctrlClick)
 	}
 	lrServer.OnSession(func(session string, connected bool) {
 		go func() {

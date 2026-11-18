@@ -76,7 +76,7 @@ type DevPicker struct {
 	// its arguments, run without a shell, where {file}, {line}, and {column}
 	// are the source's absolute path, line, and column, such as
 	// ["code", "-g", "{file}:{line}:{column}"]. Without it, Ctrl+click
-	// copies file:line:column.
+	// uses ktml dev's $VISUAL or $EDITOR, or copies file:line:column.
 	Editor []string `json:"editor,omitempty"`
 }
 
