@@ -61,7 +61,7 @@ A named variant of the `dev` section (`dev.profiles.<name>`, run with `ktml dev 
 _Avoid_: Environment, mode
 
 **Component Picker**:
-The dev-only part of the injected client (only with `dev.explorer`): a hotkey toggles pick mode, the hovered element is highlighted and labelled with its component chain and its Element Path, Shift+wheel walks out element by element and then component by component, and a click opens the innermost component's story in the Explorer, creating a type-derived one when it has none. Ctrl+click (Cmd+click) opens the selection's Element Source in `dev.picker.editor`, or copies it. It sends Render Identities, component names, and element tags, ids, and classes, never props or text.
+The dev-only part of the injected client (only with `dev.explorer`): a hotkey toggles pick mode, the hovered element is highlighted and labelled with its component chain and its Element Path, Shift+wheel walks out element by element and then component by component, and a click opens the innermost component's story in the Explorer, creating a type-derived one when it has none. Ctrl+click (Cmd+click) opens the selection's Element Source in `dev.picker.editor` or the editor of `$VISUAL`/`$EDITOR`, or copies it. It sends Render Identities, component names, and element tags, ids, and classes, never props or text.
 _Avoid_: Inspector, element picker
 
 **Element Path**:
@@ -124,10 +124,10 @@ it is declared, needs a way from a DOM element back to a `.ktml` element node.
   component. Ctrl+click (Cmd+click) opens the selected level's Element
   Source (a component's declaration for a component level) in
   `dev.picker.editor`, an argument list with `{file}`, `{line}`, and
-  `{column}`, such as `["code", "-g", "{file}:{line}:{column}"]`; without an
-  editor it copies `file:line:column`, as `C` does in pick mode. `$EDITOR`
-  is not used: it is usually a terminal editor, which ktml dev has no
-  terminal to give.
+  `{column}`, such as `["code", "-g", "{file}:{line}:{column}"]`, or else in
+  the editor of `$VISUAL` or `$EDITOR` (see the design note on opening
+  sources below); without an editor it copies `file:line:column`, as `C`
+  does in pick mode.
 - **Editor safety.** `POST /__ktml/picker/edit` takes the same identity and
   Element Path (or a component), never a file name: ktml dev locates the
   source again from its own program, checks that the file is a `.ktml`
@@ -135,6 +135,54 @@ it is declared, needs a way from a DOM element back to a `.ktml` element node.
   (no shell). The route is behind the picker's same-origin, loopback-Host,
   `application/json` POST check, and the page cannot choose the command or
   the file.
+
+## Design note: opening sources from `$EDITOR` (2026-11-18)
+
+Ctrl+click needed `dev.picker.editor`, and ignored `$EDITOR` because it is
+usually a terminal editor and ktml dev has no terminal to give it. People
+expect their editor to open without configuration, so ktml dev now resolves
+an opener from its own environment when `dev.picker.editor` is unset.
+
+- **Resolution.** `dev.picker.editor`, else `$VISUAL`, else `$EDITOR`. The
+  variable is split into words as a shell would, without running one, and
+  a value that needs a shell (an expansion, a pipe, a separator, a
+  redirection, or an unclosed quote) is reported and not used: running it
+  differently from the way its author meant would be worse than copying.
+  The program's base name picks a goto syntax from a table (cli-spec.md);
+  flags that wait for the file to close are dropped, because ktml dev does
+  not wait for the editor.
+- **Graphical editors** run directly. An unknown editor is treated as a
+  terminal editor and given the file alone: every editor takes a file name,
+  while `+line` would be read as a second file by some.
+- **Neovim** opens in the instance the developer is already using. The KTML
+  Neovim plugin registers every instance it runs in: one file per instance,
+  `<pid>.json` (`{pid, server, cwd}`), in `$XDG_RUNTIME_DIR/ktml/nvim`
+  (else `ktml-<uid>/nvim` in `$TMPDIR` or `/tmp`), a mode 0700 directory of
+  0600 files, rewritten on `DirChanged` and removed on exit; stale files of
+  exited instances or vanished sockets are removed by the plugin on startup
+  and by ktml dev when it reads them. One file per process, rather than one
+  per project root, lets several instances share a root without racing
+  each other. ktml dev reads the registry only when this user owns it and
+  nobody else can write it, tries `$NVIM` first (ktml dev running in a
+  Neovim terminal), then the instance whose working directory most closely
+  holds the file, newest first, and runs `nvim --server <address>
+  --remote-expr` with a fixed expression that calls the plugin's
+  `open_location(file, line, column)`. The path travels as hex digits and
+  the position as numbers, so nothing in a file name can become Vim script
+  or Lua. The plugin reuses a window that already shows the file, else the
+  current window (or a split, when the current buffer cannot be hidden),
+  converts the UTF-16 column to bytes, and runs an optional `on_open` hook,
+  for example to raise the terminal in a window manager. Registration is
+  never written into the project, where `.ktml/` may be committed.
+- **Terminal editors**, and Neovim with no registered instance, run in a new
+  terminal window: `xdg-terminal-exec`, else `$TERMINAL` with its command
+  flag. macOS's Terminal cannot be handed a command without a shell script,
+  so a Mac needs `$TERMINAL` or `dev.picker.editor`. With no terminal, the
+  edit route answers with the location and the reason, and the client copies
+  it and shows why.
+- **Safety is unchanged.** The page still names a selection, never a file
+  or a command; the source must be an existing `.ktml` Document inside the
+  project; nothing runs through a shell.
 
 **Component Patching**:
 The server-side half of Hot Component Reload. On a compatible change the Dev Server sends the validated sources to the app's token-guarded `/__ktml/dev/swap`; the app swaps its interpreter program and returns the rerendered HTML of every affected root. The Dev Server sends each as an SSE `patch` event to that root's page session. Any failed or ambiguous patch rebuilds and reloads.
