@@ -3,7 +3,7 @@
 local function check()
   local out = {}
   vim.opt.rtp:prepend(vim.env.KTML_NVIM)
-  require("ktml").setup({ cmd = { vim.env.KTML_BIN, "lsp" }, parser = vim.env.KTML_PARSER })
+  require("ktml").setup({ cmd = { vim.env.KTML_BIN, "lsp" }, parser = vim.env.KTML_PARSER, register = false })
   vim.cmd.edit(vim.env.KTML_FILE)
   local buf = vim.api.nvim_get_current_buf()
   out.filetype = vim.bo[buf].filetype
